@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title>Ei Xomano - Gestão de Restaurantes</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="app.css">
+
+    <script>
+        // Configuração do Tailwind com a sua paleta oficial Ei Xomano
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-orange': '#F97316',
+                        'secondary-orange': '#FF8021',
+                        'success-green': '#4ADE80',
+                        'warning-yellow': '#FBBF24',
+                        'danger-red': '#EF4444',
+                        'enterprise-purple': '#9333EA',
+                        'background-white': '#FFFFFF',
+                        'text-grey': '#71717A',
+                        'dark-slate': '#0f172a',
+                        'dark-card': '#1e293b'
+                    },
+                    animation: {
+                        'slide-down': 'slideDown 0.4s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                    },
+                    keyframes: {
+                        slideDown: {
+                            '0%': { transform: 'translateY(-100%)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            'from': { opacity: '0', transform: 'translateY(5px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #app {
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-900 font-sans">
+    
+    <div id="app"></div>
+
+    <script src="state.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        window.onbeforeunload = function() {
+            if (window.location.hash.includes('status-pedido') || window.location.hash.includes('acompanhamento')) {
+                return "Seu pedido ainda está sendo preparado. Deseja realmente sair?";
+            }
+        };
+    </script>
+</body>
+</html>

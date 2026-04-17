@@ -1,0 +1,245 @@
+const STATE_KEYS = {
+    USER: 'exomano_user',
+    RESTAURANTS: 'exomano_rests',
+    CURRENT_REST_ID: 'exomano_curr_id',
+    ACCOUNTS: 'exomano_accounts' // Nova chave para gerenciar logins
+};
+
+const PLAN_TYPES = {
+    GRATUITO: 'UG',
+    ESSENCIAL: 'UP',
+    EMPRESARIAL: 'UE',
+    ADMIN_UA: 'UA'
+};
+const PLAN_DETAILS = {
+    [PLAN_TYPES.GRATUITO]: { 
+        name: 'Gratuito', 
+        price: 0, 
+        maxProducts: 15, 
+        maxStaff: 6,
+        tableLimit: 0
+    },
+    [PLAN_TYPES.ESSENCIAL]: { 
+        name: 'Essencial', 
+        price: 49.90, 
+        maxProducts: 999, 
+        maxStaff: 10,
+        tableLimit: 12
+    },
+    [PLAN_TYPES.EMPRESARIAL]: { 
+        name: 'Empresarial', 
+        price: 99.90, 
+        maxProducts: 999, 
+        maxStaff: 999,
+        tableLimit: 9999
+    },
+    [PLAN_TYPES.ADMIN_UA]: { 
+        name: 'Admin Global', 
+        price: 0, 
+        maxProducts: 9999, 
+        maxStaff: 9999,
+        tableLimit: 9999
+    }
+};
+
+const State = {
+    init() {
+        // 1. Inicializa lista de contas (Cadastro de usuários)
+        if (!localStorage.getItem(STATE_KEYS.ACCOUNTS)) {
+            const initialAccounts = [
+                { email: 'admin', pass: 'admin', role: 'UA', plan: 'UA', name: 'Admin Global' },
+                { email: 'nathan@teste.com', pass: '123', role: 'UR', plan: 'UG', name: 'Nathan' }
+            ];
+            localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(initialAccounts));
+        }
+
+        // 2. Inicializa Restaurantes
+        if (!localStorage.getItem(STATE_KEYS.RESTAURANTS)) {
+            const defaultRest = {
+                id: Date.now(),
+                name: 'Meu Restaurante',
+                logo: '', 
+                ownerEmail: 'nathan@teste.com',
+                products: [
+                    { id: 1, name: 'X-Burger Especial', price: 28.90, category: 'Hambúrgueres', description: 'Pão brioche, blend 180g, queijo cheddar e maionese da casa.', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500' },
+                    { id: 2, name: 'Batata Rústica', price: 15.00, category: 'Acompanhamentos', description: 'Batatas cortadas à mão com alecrim e sal grosso.', image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500' }
+                ],
+                staff: [],
+                orders: [] 
+            };
+            localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify([defaultRest]));
+            localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, defaultRest.id);
+        }
+    },
+
+    // --- NOVA GESTÃO DE AUTENTICAÇÃO (Login e Cadastro) ---
+    login(email, pass) {
+        const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+        const user = accounts.find(a => a.email === email && a.pass === pass);
+        if (user) {
+            this.setUser(user);
+            return user;
+        }
+        return null;
+    },
+
+    register(email, pass, name, restaurantName) {
+        const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+        if (accounts.find(a => a.email === email)) return { success: false, msg: 'E-mail já cadastrado' };
+        
+        const newUser = { 
+            email, 
+            pass, 
+            name: name || email.split('@')[0], 
+            role: 'UR', 
+            plan: 'UG' 
+        };
+        accounts.push(newUser);
+        localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+
+        // Criar restaurante para o novo usuário
+        const rests = this.getRestaurants();
+        const newRest = {
+            id: Date.now(),
+            name: restaurantName || 'Meu Restaurante',
+            logo: '',
+            ownerEmail: email,
+            products: [],
+            staff: [],
+            orders: []
+        };
+        rests.push(newRest);
+        localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+
+        return { success: true };
+    },
+
+    logout() {
+        localStorage.removeItem(STATE_KEYS.USER);
+        window.location.reload();
+    },
+
+    // --- GESTÃO DE USUÁRIO (Sua lógica original preservada) ---
+    getUser() {
+        return JSON.parse(localStorage.getItem(STATE_KEYS.USER));
+    },
+
+    setUser(userData) {
+        localStorage.setItem(STATE_KEYS.USER, JSON.stringify(userData));
+        window.dispatchEvent(new Event('statechange'));
+    },
+
+    updateUser(data) {
+        const user = this.getUser();
+        if (!user) return;
+        const updated = { ...user, ...data };
+        this.setUser(updated);
+        
+        // Persistir alteração de plano na lista de contas
+        const accounts = this.getAccounts();
+        const index = accounts.findIndex(a => a.email === updated.email);
+        if (index !== -1) {
+            accounts[index] = updated;
+            localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+        }
+    },
+
+    // --- GESTÃO DE RESTAURANTES (Sua lógica original preservada) ---
+    getRestaurants() {
+        return JSON.parse(localStorage.getItem(STATE_KEYS.RESTAURANTS)) || [];
+    },
+
+    getAccounts() {
+        return JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+    },
+
+    getCurrentRest() {
+        const user = this.getUser();
+        const rests = this.getRestaurants();
+        if (user && user.role === 'UR') {
+            return rests.find(r => r.ownerEmail === user.email) || rests[0];
+        }
+        const id = localStorage.getItem(STATE_KEYS.CURRENT_REST_ID);
+        return rests.find(r => r.id == id) || rests[0];
+    },
+
+    updateCurrentRest(data) {
+        const rests = this.getRestaurants();
+        const index = rests.findIndex(r => r.id == data.id);
+        if (index !== -1) {
+            rests[index] = data;
+            localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+            window.dispatchEvent(new Event('statechange'));
+        }
+    },
+
+    // --- LÓGICA DE NEGÓCIO E LIMITES (Sua lógica original preservada) ---
+    canAdd(type) {
+        const user = this.getUser();
+        if (!user) return false;
+        const rest = this.getCurrentRest();
+        const limits = PLAN_DETAILS[user.plan];
+
+        if (type === 'product') return rest.products.length < limits.maxProducts;
+        if (type === 'staff') return rest.staff.length < limits.maxStaff;
+        return true;
+    },
+
+    getLimits() {
+        const user = this.getUser();
+        return user ? PLAN_DETAILS[user.plan] : PLAN_DETAILS['UG'];
+    },
+
+    hasFeature(feature) {
+        const user = this.getUser();
+        if (!user) return false;
+        if (user.role === 'UA') return true; 
+        
+        const plan = user.plan;
+        const features = {
+            'UG': ['basic_kds'], // Removido 'reports' do Gratuito para bloquear gráfico
+            'UP': ['basic_kds', 'mesa_map', 'reports', 'mesa_time'], 
+            'UE': ['basic_kds', 'mesa_map', 'reports', 'mesa_time', 'analytics_bi', 'live_kitchen', 'custom_branding', 'advanced_reports', 'ticket_medio'] 
+        };
+
+        return (features[plan] || []).includes(feature);
+    },
+
+    getAnalytics() {
+        const rest = this.getCurrentRest();
+        const orders = rest.orders || [];
+        
+        // Total de Vendas (Faturamento)
+        const totalSales = orders.reduce((acc, o) => {
+            const orderTotal = o.items.reduce((sum, i) => sum + (i.price * i.qnt), 0);
+            return acc + orderTotal;
+        }, 0);
+
+        // Ticket Médio
+        const ticketMedio = orders.length > 0 ? totalSales / orders.length : 0;
+
+        // Produtos Mais Vendidos
+        const productSales = {};
+        orders.forEach(o => {
+            o.items.forEach(i => {
+                if (!productSales[i.name]) productSales[i.name] = { name: i.name, qnt: 0, total: 0 };
+                productSales[i.name].qnt += i.qnt;
+                productSales[i.name].total += (i.price * i.qnt);
+            });
+        });
+
+        const topProducts = Object.values(productSales)
+            .sort((a, b) => b.qnt - a.qnt)
+            .slice(0, 5);
+
+        return {
+            totalSales,
+            orderCount: orders.length,
+            ticketMedio,
+            topProducts,
+            activeTables: [...new Set(orders.filter(o => o.status !== 'finalizado').map(o => o.table))].length
+        };
+    }
+};
+
+State.init();

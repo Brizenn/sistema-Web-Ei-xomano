@@ -1,0 +1,156 @@
+/* Ei Xomano - Identidade Visual Oficial */
+
+:root {
+    --primary-orange: #F97316;
+    --secondary-orange: #FF8021;
+    --enterprise-purple: #9333EA;
+    --success-green: #4ADE80;
+    --danger-red: #EF4444;
+    --background-gray: #F8FAFC;
+}
+
+/* Animação de entrada das telas para um efeito "App Real" */
+#app {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Notificação que desce do topo (Acompanhamento de Pedido) */
+.animate-slide-down {
+    animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+
+/* Cards Arredondados - Padrão do Sistema */
+.ex-card {
+    background-color: #FFFFFF;
+    border-radius: 1.5rem;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ex-card:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+/* Botão Laranja Principal */
+.ex-btn-primary {
+    background-color: var(--primary-orange);
+    color: white;
+    border-radius: 9999px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.ex-btn-primary:hover {
+    background-color: var(--secondary-orange);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.ex-btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Badges de Status (Cozinha e Cliente) */
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.status-pendente { background: #FEF3C7; color: #D97706; }
+.status-preparo { background: #DBEAFE; color: #2563EB; }
+.status-pronto { background: #DCFCE7; color: #16A34A; }
+
+/* Timeline de Acompanhamento do Cliente */
+.step-line {
+    position: relative;
+}
+
+.step-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 2px;
+    background: #E2E8F0;
+    z-index: 0;
+}
+
+.step-progress {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 2px;
+    background: var(--primary-orange);
+    transition: width 0.5s ease;
+    z-index: 1;
+}
+
+/* Imagens de Produto com Zoom Suave */
+.product-img-hover {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group:hover .product-img-hover {
+    transform: scale(1.08);
+}
+
+/* Estilo Dark para Admin Global (UA) */
+.ua-panel {
+    background-color: #0F172A;
+    color: #F8FAFC;
+}
+
+.ua-card {
+    background-color: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 1.25rem;
+}
+
+/* Scrollbar Personalizada (Fina e Laranja) */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-orange);
+}
+
+/* Responsividade para Mobile */
+@media (max-width: 768px) {
+    .ml-64 {
+        margin-left: 0 !important;
+    }
+    
+    aside {
+        display: none; /* Em breve adicionaremos o menu hambúrguer */
+    }
+}
