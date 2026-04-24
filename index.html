@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
     <title>Ei Xomano - Gestão de Restaurantes</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <link rel="stylesheet" href="app.css">
 
     <script>
@@ -53,24 +54,27 @@
             padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
+
         #app {
             min-height: 100vh;
         }
     </style>
 </head>
+
 <body class="bg-gray-50 text-slate-900 font-sans">
-    
+
     <div id="app"></div>
 
     <script src="state.js"></script>
     <script src="app.js"></script>
 
     <script>
-        window.onbeforeunload = function() {
+        window.onbeforeunload = function () {
             if (window.location.hash.includes('status-pedido') || window.location.hash.includes('acompanhamento')) {
                 return "Seu pedido ainda está sendo preparado. Deseja realmente sair?";
             }
         };
     </script>
 </body>
+
 </html>

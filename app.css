@@ -15,8 +15,15 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Notificação que desce do topo (Acompanhamento de Pedido) */
@@ -25,8 +32,13 @@
 }
 
 @keyframes slideDown {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
+    from {
+        transform: translateY(-100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 /* Cards Arredondados - Padrão do Sistema */
@@ -75,9 +87,20 @@
     letter-spacing: 0.02em;
 }
 
-.status-pendente { background: #FEF3C7; color: #D97706; }
-.status-preparo { background: #DBEAFE; color: #2563EB; }
-.status-pronto { background: #DCFCE7; color: #16A34A; }
+.status-pendente {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.status-preparo {
+    background: #DBEAFE;
+    color: #2563EB;
+}
+
+.status-pronto {
+    background: #DCFCE7;
+    color: #16A34A;
+}
 
 /* Timeline de Acompanhamento do Cliente */
 .step-line {
@@ -149,8 +172,17 @@
     .ml-64 {
         margin-left: 0 !important;
     }
-    
+
     aside {
-        display: none; /* Em breve adicionaremos o menu hambúrguer */
+        display: none;
+        /* Em breve adicionaremos o menu hambúrguer */
     }
+}
+
+/* Modo Escudo */
+body.shield-mode .sensitive-data {
+    filter: blur(8px);
+    opacity: 0.6;
+    user-select: none;
+    transition: all 0.3s ease;
 }

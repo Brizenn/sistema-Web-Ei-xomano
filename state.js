@@ -12,31 +12,31 @@ const PLAN_TYPES = {
     ADMIN_UA: 'UA'
 };
 const PLAN_DETAILS = {
-    [PLAN_TYPES.GRATUITO]: { 
-        name: 'Gratuito', 
-        price: 0, 
-        maxProducts: 15, 
+    [PLAN_TYPES.GRATUITO]: {
+        name: 'Gratuito',
+        price: 0,
+        maxProducts: 15,
         maxStaff: 6,
         tableLimit: 0
     },
-    [PLAN_TYPES.ESSENCIAL]: { 
-        name: 'Essencial', 
-        price: 49.90, 
-        maxProducts: 999, 
+    [PLAN_TYPES.ESSENCIAL]: {
+        name: 'Essencial',
+        price: 49.90,
+        maxProducts: 999,
         maxStaff: 10,
         tableLimit: 12
     },
-    [PLAN_TYPES.EMPRESARIAL]: { 
-        name: 'Empresarial', 
-        price: 99.90, 
-        maxProducts: 999, 
+    [PLAN_TYPES.EMPRESARIAL]: {
+        name: 'Empresarial',
+        price: 99.90,
+        maxProducts: 999,
         maxStaff: 999,
         tableLimit: 9999
     },
-    [PLAN_TYPES.ADMIN_UA]: { 
-        name: 'Admin Global', 
-        price: 0, 
-        maxProducts: 9999, 
+    [PLAN_TYPES.ADMIN_UA]: {
+        name: 'Admin Global',
+        price: 0,
+        maxProducts: 9999,
         maxStaff: 9999,
         tableLimit: 9999
     }
@@ -58,14 +58,17 @@ const State = {
             const defaultRest = {
                 id: Date.now(),
                 name: 'Meu Restaurante',
-                logo: '', 
+                logo: '',
                 ownerEmail: 'nathan@teste.com',
+                createdAt: Date.now(),
+                status: 'ativo',
                 products: [
                     { id: 1, name: 'X-Burger Especial', price: 28.90, category: 'Hambúrgueres', description: 'Pão brioche, blend 180g, queijo cheddar e maionese da casa.', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500' },
                     { id: 2, name: 'Batata Rústica', price: 15.00, category: 'Acompanhamentos', description: 'Batatas cortadas à mão com alecrim e sal grosso.', image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500' }
                 ],
                 staff: [],
-                orders: [] 
+                orders: [],
+                tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` })) // Array default de mesas
             };
             localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify([defaultRest]));
             localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, defaultRest.id);
@@ -86,13 +89,13 @@ const State = {
     register(email, pass, name, restaurantName) {
         const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
         if (accounts.find(a => a.email === email)) return { success: false, msg: 'E-mail já cadastrado' };
-        
-        const newUser = { 
-            email, 
-            pass, 
-            name: name || email.split('@')[0], 
-            role: 'UR', 
-            plan: 'UG' 
+
+        const newUser = {
+            email,
+            pass,
+            name: name || email.split('@')[0],
+            role: 'UR',
+            plan: 'UG'
         };
         accounts.push(newUser);
         localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
@@ -104,9 +107,12 @@ const State = {
             name: restaurantName || 'Meu Restaurante',
             logo: '',
             ownerEmail: email,
+            createdAt: Date.now(),
+            status: 'ativo',
             products: [],
             staff: [],
-            orders: []
+            orders: [],
+            tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
         };
         rests.push(newRest);
         localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
@@ -134,7 +140,7 @@ const State = {
         if (!user) return;
         const updated = { ...user, ...data };
         this.setUser(updated);
-        
+
         // Persistir alteração de plano na lista de contas
         const accounts = this.getAccounts();
         const index = accounts.findIndex(a => a.email === updated.email);
@@ -156,11 +162,18 @@ const State = {
     getCurrentRest() {
         const user = this.getUser();
         const rests = this.getRestaurants();
-        if (user && user.role === 'UR') {
-            return rests.find(r => r.ownerEmail === user.email) || rests[0];
-        }
         const id = localStorage.getItem(STATE_KEYS.CURRENT_REST_ID);
-        return rests.find(r => r.id == id) || rests[0];
+
+        let rest = null;
+        if (id) {
+            rest = rests.find(r => r.id == id);
+        }
+
+        if (!rest && user && user.role === 'UR') {
+            rest = rests.find(r => r.ownerEmail === user.email);
+        }
+
+        return rest || rests[0];
     },
 
     updateCurrentRest(data) {
@@ -193,13 +206,13 @@ const State = {
     hasFeature(feature) {
         const user = this.getUser();
         if (!user) return false;
-        if (user.role === 'UA') return true; 
-        
+        if (user.role === 'UA') return true;
+
         const plan = user.plan;
         const features = {
-            'UG': ['basic_kds'], // Removido 'reports' do Gratuito para bloquear gráfico
-            'UP': ['basic_kds', 'mesa_map', 'reports', 'mesa_time'], 
-            'UE': ['basic_kds', 'mesa_map', 'reports', 'mesa_time', 'analytics_bi', 'live_kitchen', 'custom_branding', 'advanced_reports', 'ticket_medio'] 
+            'UG': ['basic_kds', 'mesa_map'], // Liberado mapa de mesas para Gratuito
+            'UP': ['basic_kds', 'mesa_map', 'reports', 'mesa_time'],
+            'UE': ['basic_kds', 'mesa_map', 'reports', 'mesa_time', 'analytics_bi', 'live_kitchen', 'custom_branding', 'advanced_reports', 'ticket_medio', 'multi_loja']
         };
 
         return (features[plan] || []).includes(feature);
@@ -208,7 +221,7 @@ const State = {
     getAnalytics() {
         const rest = this.getCurrentRest();
         const orders = rest.orders || [];
-        
+
         // Total de Vendas (Faturamento)
         const totalSales = orders.reduce((acc, o) => {
             const orderTotal = o.items.reduce((sum, i) => sum + (i.price * i.qnt), 0);

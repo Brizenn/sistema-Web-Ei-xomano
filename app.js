@@ -6,9 +6,9 @@ function navigateTo(view) {
     try {
         currentActiveView = view;
         appContainer.innerHTML = '';
-        window.scrollTo(0,0);
-        
-        switch(view) {
+        window.scrollTo(0, 0);
+
+        switch (view) {
             case 'login': renderLogin(); break;
             case 'login-ua': renderLoginUA(); break;
             case 'dashboard': renderDashboard(); break;
@@ -53,13 +53,37 @@ function withLayout(content) {
             </div>
         </aside>
 
-        <main class="flex-1 ml-64 p-12 bg-gray-50/50">
+        <main class="flex-1 ml-64 p-12 bg-gray-50/50 transition-all" id="main-content-area">
             <header class="flex justify-between items-center mb-12">
                 <div>
                     <span class="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] mb-2 block">Painel Administrativo</span>
                     <h1 class="text-3xl font-black text-slate-800 tracking-tighter">Olá, ${user.name} 👋</h1>
                 </div>
                 <div class="flex items-center gap-6">
+                    ${user.plan === 'UE' ? `
+                    <div class="flex items-center gap-2">
+                        ${currentActiveView === 'dashboard' ? `
+                        <button onclick="renderCadastrarRestaurantes()" class="flex items-center gap-2 bg-primary-orange text-white px-4 py-2 rounded-2xl shadow-sm font-bold text-xs hover:bg-secondary-orange transition-all">
+                            <i class="fas fa-plus"></i> Cadastrar Restaurante
+                        </button>
+                        ` : ''}
+                        <div class="relative group">
+                            <button class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border font-bold text-xs hover:border-primary-orange transition-all">
+                                <i class="fas fa-store text-gray-400"></i>
+                                Mudar Restaurante
+                                <i class="fas fa-chevron-down text-[10px] text-gray-400"></i>
+                            </button>
+                            <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border hidden group-hover:block z-50 overflow-hidden">
+                                ${State.getRestaurants().filter(r => r.ownerEmail === user.email || r.id === rest.id).map(r => `
+                                    <button onclick="switchRestaurant(${r.id})" class="w-full text-left px-4 py-3 text-xs font-bold ${r.id === rest.id ? 'bg-orange-50 text-primary-orange' : 'hover:bg-gray-50'} border-b last:border-0 transition-all">
+                                        ${r.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     <div class="text-right">
                         <p class="text-sm font-black text-slate-800">${rest.name}</p>
                         <p class="text-[10px] font-bold text-success-green uppercase">● Sistema Online</p>
@@ -72,6 +96,26 @@ function withLayout(content) {
             ${content}
         </main>
     </div>`;
+}
+
+let isShieldActive = false;
+function toggleShieldMode() {
+    isShieldActive = !isShieldActive;
+    const btn = document.getElementById('btn-shield');
+    if (isShieldActive) {
+        btn.classList.add('bg-slate-800', 'text-white', 'border-slate-800');
+        btn.classList.remove('text-gray-400', 'bg-white');
+        document.body.classList.add('shield-mode');
+    } else {
+        btn.classList.remove('bg-slate-800', 'text-white', 'border-slate-800');
+        btn.classList.add('text-gray-400', 'bg-white');
+        document.body.classList.remove('shield-mode');
+    }
+}
+
+function switchRestaurant(id) {
+    localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, id);
+    window.dispatchEvent(new Event('statechange'));
 }
 
 // --- TELA: LOGIN (MODIFICADA: SEM NOME DO PROPRIETÁRIO) ---
@@ -234,10 +278,10 @@ function handleRegister() {
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
 
-    if(!restName || !email || !pass) return alert("Preencha todos os campos.");
+    if (!restName || !email || !pass) return alert("Preencha todos os campos.");
 
     const res = State.register(email, pass, null, restName);
-    if(res.success) {
+    if (res.success) {
         alert("Conta criada com sucesso! Faça login.");
         renderLogin();
     } else {
@@ -249,9 +293,9 @@ function handleUALogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
 
-    if(email === 'admin' && pass === 'admin') {
+    if (email === 'admin' && pass === 'admin') {
         const user = State.login(email, pass);
-        if(user && user.role === 'UA') {
+        if (user && user.role === 'UA') {
             navigateTo('admin-ua');
         } else {
             alert("Erro ao acessar painel UA.");
@@ -278,7 +322,7 @@ function renderDashboard() {
                     ${hasAdvanced ? '<span class="text-[10px] font-black bg-white/20 px-3 py-1 rounded-full">+12% hoje</span>' : ''}
                 </div>
                 <p class="text-xs font-bold uppercase opacity-80">Vendas Brutas</p>
-                <p class="text-4xl font-black mt-2 tracking-tighter">R$ ${analytics.totalSales.toFixed(2)}</p>
+                <p class="text-4xl font-black mt-2 tracking-tighter sensitive-data">R$ ${analytics.totalSales.toFixed(2)}</p>
             </div>
 
             <div class="ex-card p-8 bg-white">
@@ -286,7 +330,7 @@ function renderDashboard() {
                     <div class="p-3 bg-gray-50 rounded-2xl"><i class="fas fa-shopping-basket"></i></div>
                 </div>
                 <p class="text-xs font-bold text-gray-400 uppercase">Pedidos Totais</p>
-                <p class="text-4xl font-black mt-2 text-slate-800 tracking-tighter">${analytics.orderCount}</p>
+                <p class="text-4xl font-black mt-2 text-slate-800 tracking-tighter sensitive-data">${analytics.orderCount}</p>
             </div>
 
             <div class="ex-card p-8 bg-white">
@@ -294,7 +338,7 @@ function renderDashboard() {
                     <div class="p-3 bg-gray-50 rounded-2xl"><i class="fas fa-calculator"></i></div>
                 </div>
                 <p class="text-xs font-bold text-gray-400 uppercase">Ticket Médio</p>
-                <p class="text-4xl font-black mt-2 text-slate-800 tracking-tighter">${hasTicketMedio ? `R$ ${analytics.ticketMedio.toFixed(2)}` : '---'}</p>
+                <p class="text-4xl font-black mt-2 text-slate-800 tracking-tighter sensitive-data">${hasTicketMedio ? `R$ ${analytics.ticketMedio.toFixed(2)}` : '---'}</p>
             </div>
 
             <div class="ex-card p-8 bg-white border-2 border-purple-100">
@@ -349,7 +393,7 @@ function renderDashboard() {
                         <div class="space-y-4">
                             ${analytics.topProducts.length > 0 ? analytics.topProducts.map((p, i) => `
                                 <div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl">
-                                    <div class="w-6 h-6 bg-white/10 rounded flex items-center justify-center font-black text-[10px]">${i+1}</div>
+                                    <div class="w-6 h-6 bg-white/10 rounded flex items-center justify-center font-black text-[10px]">${i + 1}</div>
                                     <div class="flex-1">
                                         <p class="text-[10px] font-black uppercase">${p.name}</p>
                                         <p class="text-[8px] font-bold text-white/40">${p.qnt} vendas</p>
@@ -383,11 +427,14 @@ function renderDashboard() {
 function renderPerfil() {
     const user = State.getUser();
     const rest = State.getCurrentRest();
-    
+
     let content = `
     <div class="max-w-2xl mx-auto animate-fadeIn">
         <div class="ex-card p-10 bg-white shadow-xl">
-            <h2 class="text-2xl font-black mb-8 italic text-slate-800 border-b pb-4 uppercase">Configurações do Perfil</h2>
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
+                <h2 class="text-2xl font-black italic text-slate-800 uppercase">Configurações do Perfil</h2>
+                ${user.plan === 'UE' ? `<button onclick="createNewRestaurant()" class="ex-btn-primary px-4 py-2 text-xs">+ Nova Loja</button>` : ''}
+            </div>
             
             <div class="space-y-6">
                 <div class="flex flex-col items-center mb-8">
@@ -433,12 +480,115 @@ function renderPerfil() {
     appContainer.innerHTML = withLayout(content);
 }
 
+function renderCadastrarRestaurantes() {
+    const user = State.getUser();
+    if (user.plan !== 'UE') return navigateTo('dashboard');
+
+    const allRests = State.getRestaurants();
+    const mainRest = State.getCurrentRest();
+    // Filtra para pegar estritamente as filiais pertencentes ao email do usuário logado
+    const otherRests = allRests.filter(r => r.id !== mainRest.id && r.ownerEmail === user.email);
+
+    const content = `
+    <div class="animate-fadeIn max-w-4xl mx-auto">
+        <div class="mb-10">
+            <h2 class="text-3xl font-black uppercase italic tracking-tighter text-slate-800">Minhas Lojas</h2>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Gerenciamento Multi-lojas (Plano Empresarial)</p>
+        </div>
+
+        <!-- Loja Principal -->
+        <div class="mb-12">
+            <h3 class="text-xs font-black text-primary-orange uppercase mb-4 tracking-widest">Loja Principal (Sede)</h3>
+            <div class="ex-card p-6 bg-orange-50/50 border-2 border-primary-orange flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 bg-white rounded-2xl shadow-sm overflow-hidden flex items-center justify-center">
+                        <img src="${mainRest.logo || `https://ui-avatars.com/api/?name=${mainRest.name}&background=F97316&color=fff`}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-black text-slate-800 uppercase tracking-tight">${mainRest.name}</h4>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mt-1">Criada em: ${new Date(mainRest.createdAt).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <button onclick="switchRestaurant(${mainRest.id})" class="ex-btn-primary px-6 py-3 text-xs">Acessar Painel</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-8 items-start">
+            <!-- Lista de Outras Lojas -->
+            <div class="space-y-4">
+                <h3 class="text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Lojas Filiais</h3>
+                ${otherRests.length === 0 ? '<p class="text-xs font-bold text-gray-300 italic">Nenhuma filial cadastrada.</p>' : ''}
+                ${otherRests.map(r => `
+                    <div class="ex-card p-4 bg-white flex items-center justify-between group hover:border-slate-300 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
+                                <img src="${r.logo || `https://ui-avatars.com/api/?name=${r.name}&background=64748b&color=fff`}" class="w-full h-full object-cover opacity-80">
+                            </div>
+                            <div>
+                                <h4 class="font-black text-slate-700 uppercase tracking-tight">${r.name}</h4>
+                                <p class="text-[8px] font-bold text-gray-400 uppercase mt-1">ID: ${r.id}</p>
+                            </div>
+                        </div>
+                        <button onclick="switchRestaurant(${r.id})" class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 hover:text-white transition-all shadow-sm">Acessar</button>
+                    </div>
+                `).join('')}
+            </div>
+
+            <!-- Form Cadastrar Nova -->
+            <div class="ex-card p-8 bg-white border-dashed border-2 border-gray-200">
+                <div class="text-center mb-8">
+                    <div class="w-12 h-12 bg-orange-50 text-primary-orange rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h3 class="text-lg font-black uppercase tracking-tighter text-slate-800">Cadastrar Nova Loja</h3>
+                    <p class="text-[10px] font-bold text-gray-400 mt-2 uppercase">Expanda sua rede de restaurantes</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <input id="new-rest-name" type="text" placeholder="Nome da Nova Loja" class="w-full p-4 bg-gray-50 border rounded-2xl font-bold text-sm outline-none focus:border-primary-orange transition-all text-center">
+                    <button onclick="handleCreateNewRestaurant()" class="w-full ex-btn-primary p-4 shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-check"></i> CADASTRAR FILIAL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    appContainer.innerHTML = withLayout(content);
+}
+
+function handleCreateNewRestaurant() {
+    const user = State.getUser();
+    if (user.plan !== 'UE') return alert("Exclusivo do plano Empresarial.");
+
+    const name = document.getElementById('new-rest-name').value;
+    if (!name || name.trim() === '') return alert("Preencha o nome da nova loja.");
+
+    const rests = State.getRestaurants();
+    const newRest = {
+        id: Date.now(),
+        name: name.trim(),
+        logo: '',
+        ownerEmail: user.email,
+        createdAt: Date.now(),
+        status: 'ativo',
+        products: [],
+        staff: [],
+        orders: [],
+        tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
+    };
+    rests.push(newRest);
+    localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+
+    alert("Nova loja cadastrada com sucesso!");
+    renderCadastrarRestaurantes();
+}
+
 let base64Logo = null;
 function handleLogoUpload(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             base64Logo = e.target.result;
             document.getElementById('logo-preview').innerHTML = `<img src="${base64Logo}" class="w-full h-full object-cover">`;
             document.getElementById('edit-rest-logo').value = ''; // Limpa URL se subir arquivo
@@ -450,12 +600,12 @@ function handleLogoUpload(event) {
 function saveProfileChanges() {
     const rest = State.getCurrentRest();
     const user = State.getUser();
-    
+
     const newRestName = document.getElementById('edit-rest-name').value;
     const newOwnerName = document.getElementById('edit-owner-name').value;
     const newLogoUrl = document.getElementById('edit-rest-logo').value;
 
-    if(!newRestName || !newOwnerName) return alert("Preencha todos os campos!");
+    if (!newRestName || !newOwnerName) return alert("Preencha todos os campos!");
 
     rest.name = newRestName;
     rest.logo = base64Logo || newLogoUrl || rest.logo;
@@ -463,7 +613,7 @@ function saveProfileChanges() {
 
     State.updateCurrentRest(rest);
     State.setUser(user);
-    
+
     base64Logo = null; // Reseta após salvar
     alert("Perfil atualizado com sucesso!");
     navigateTo('dashboard');
@@ -473,52 +623,121 @@ function saveProfileChanges() {
 function renderKDS() {
     const rest = State.getCurrentRest();
     const user = State.getUser();
-    const isFree = user.plan === 'UG';
+    // Filtra funcionários pelo seu respectivo cargo
+    const cooks = rest.staff.filter(s => s.role === 'cook');
+    const waiters = rest.staff.filter(s => s.role === 'waiter');
 
-    let content = `
-    <div class="animate-fadeIn">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-xl font-black uppercase italic tracking-tight">Pedidos em Preparo</h2>
-            <div class="flex gap-4 items-center">
-                ${isFree ? `
-                    <button onclick="openManualQRModal()" class="bg-slate-800 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase hover:bg-slate-700 transition-all">
-                        <i class="fas fa-qrcode mr-2"></i> Gerar QR Mesa
-                    </button>
-                ` : ''}
-                <span class="px-4 py-2 bg-orange-100 text-primary-orange rounded-full text-[10px] font-black uppercase">Pendentes: ${rest.orders.length}</span>
-            </div>
-        </div>
-        
-        <div class="grid grid-cols-4 gap-6">
-            ${rest.orders.map(order => `
-                <div class="ex-card overflow-hidden bg-white border-t-8 border-slate-800 flex flex-col h-[450px]">
-                    <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase">Mesa</p>
-                            <h4 class="text-2xl font-black text-slate-800">${order.table}</h4>
-                        </div>
-                        <span class="text-[10px] font-black bg-white px-3 py-1 rounded-full border shadow-sm">${order.time}</span>
-                    </div>
-                    
-                    <div class="p-6 flex-1 overflow-y-auto space-y-4">
-                        ${order.items.map(item => `
-                            <div class="flex justify-between items-start group">
-                                <div class="flex gap-3">
-                                    <span class="bg-orange-50 text-primary-orange w-6 h-6 flex items-center justify-center rounded font-black text-xs">${item.qnt}x</span>
-                                    <p class="text-sm font-bold text-slate-700 uppercase tracking-tight">${item.name}</p>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
+    // Filtra apenas pedidos que não estão entregues
+    const activeOrders = rest.orders.filter(o => o.status !== 'entregue');
 
-                    <div class="p-6 bg-gray-50 border-t">
-                        <button onclick="completeOrder(${order.id})" class="w-full bg-slate-800 text-white p-4 rounded-2xl font-black text-[10px] uppercase hover:bg-success-green transition-all shadow-lg">Marcar como Pronto</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    </div>`;
+    let ordersHtml = "";
+    activeOrders.forEach(order => {
+        const isPreparing = order.status === 'em preparo' || order.status === 'preparando';
+        const isReady = order.status === 'pronto';
+
+        const borderColor = isPreparing ? 'border-primary-orange' : (isReady ? 'border-blue-500' : 'border-success-green');
+        const badgeColor = isPreparing ? 'bg-orange-100 text-primary-orange' : (isReady ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700');
+
+        let logoHtml = "";
+        if (rest.logo) {
+            logoHtml = '<img src="' + rest.logo + '" class="absolute top-2 right-2 w-8 h-8 rounded-full opacity-30 object-cover">';
+        }
+
+        let cooksHtml = "";
+        cooks.forEach(c => {
+            const selected = order.cookId == c.id ? 'selected' : '';
+            cooksHtml += '<option value="' + c.id + '" ' + selected + '>' + c.name + '</option>';
+        });
+
+        let waitersHtml = "";
+        waiters.forEach(w => {
+            const selected = order.waiterId == w.id ? 'selected' : '';
+            waitersHtml += '<option value="' + w.id + '" ' + selected + '>' + w.name + '</option>';
+        });
+
+        let itemsHtml = "";
+        order.items.forEach(item => {
+            itemsHtml += '<div class="flex justify-between items-start group">' +
+                '<div class="flex gap-3">' +
+                '<span class="bg-orange-50 text-primary-orange w-6 h-6 flex items-center justify-center rounded font-black text-xs">' + item.qnt + 'x</span>' +
+                '<p class="text-sm font-bold text-slate-700 uppercase tracking-tight">' + item.name + '</p>' +
+                '</div>' +
+                '</div>';
+        });
+
+        let actionBtnHtml = "";
+        if (isPreparing) {
+            actionBtnHtml = '<button onclick="changeOrderStatus(' + order.id + ', \'pronto\')" class="w-full bg-slate-800 text-white p-4 rounded-2xl font-black text-[10px] uppercase hover:bg-blue-500 transition-all shadow-lg">Marcar como Pronto</button>';
+        } else if (isReady) {
+            actionBtnHtml = '<button onclick="changeOrderStatus(' + order.id + ', \'entregue\')" class="w-full bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase hover:bg-success-green transition-all shadow-lg">Marcar como Entregue</button>';
+        } else {
+            actionBtnHtml = '<button onclick="changeOrderStatus(' + order.id + ', \'entregue\')" class="w-full bg-success-green text-white p-4 rounded-2xl font-black text-[10px] uppercase hover:scale-105 transition-all shadow-lg">Marcar como Entregue</button>';
+        }
+
+        ordersHtml += '<div class="ex-card overflow-hidden bg-white border-t-8 ' + borderColor + ' flex flex-col h-[520px]">' +
+            '<div class="p-6 border-b bg-gray-50 flex justify-between items-center relative">' +
+            logoHtml +
+            '<div>' +
+            '<p class="text-[10px] font-black text-gray-400 uppercase">Mesa</p>' +
+            '<h4 class="text-2xl font-black text-slate-800">' + order.table + '</h4>' +
+            '</div>' +
+            '<span class="text-[10px] font-black ' + badgeColor + ' px-3 py-1 rounded-full uppercase">' + order.status + '</span>' +
+            '</div>' +
+
+            '<div class="p-4 bg-white border-b space-y-2">' +
+            '<select onchange="updateOrderStaff(' + order.id + ', \'cookId\', this.value)" class="w-full p-2 bg-gray-50 border rounded-xl text-xs font-bold text-gray-500 outline-none">' +
+            '<option value="">Atribuir Cozinheiro...</option>' +
+            cooksHtml +
+            '</select>' +
+            '<select onchange="updateOrderStaff(' + order.id + ', \'waiterId\', this.value)" class="w-full p-2 bg-gray-50 border rounded-xl text-xs font-bold text-gray-500 outline-none">' +
+            '<option value="">Atribuir Garçom...</option>' +
+            waitersHtml +
+            '</select>' +
+            '</div>' +
+
+            '<div class="p-6 flex-1 overflow-y-auto space-y-4">' +
+            itemsHtml +
+            '</div>' +
+
+            '<div class="p-6 bg-gray-50 border-t">' +
+            actionBtnHtml +
+            '</div>' +
+            '</div>';
+    });
+
+    const content = '<div class="animate-fadeIn">' +
+        '<div class="flex justify-between items-center mb-8">' +
+        '<h2 class="text-xl font-black uppercase italic tracking-tight">Cozinha Digital (KDS)</h2>' +
+        '<div class="flex gap-4 items-center">' +
+        '<span class="px-4 py-2 bg-orange-100 text-primary-orange rounded-full text-[10px] font-black uppercase">Pendentes: ' + activeOrders.length + '</span>' +
+        '</div>' +
+        '</div>' +
+
+        '<div class="grid grid-cols-4 gap-6">' +
+        ordersHtml +
+        '</div>' +
+        '</div>';
+
     appContainer.innerHTML = withLayout(content);
+}
+
+function updateOrderStaff(orderId, field, staffId) {
+    const rest = State.getCurrentRest();
+    const order = rest.orders.find(o => o.id === orderId);
+    if (order) {
+        order[field] = staffId;
+        State.updateCurrentRest(rest);
+    }
+}
+
+function changeOrderStatus(orderId, newStatus) {
+    const rest = State.getCurrentRest();
+    const order = rest.orders.find(o => o.id === orderId);
+    if (order) {
+        order.status = newStatus;
+        State.updateCurrentRest(rest);
+        renderKDS();
+    }
 }
 
 function openManualQRModal() {
@@ -532,9 +751,17 @@ function openManualQRModal() {
                 <input id="manual-table-input" type="number" min="1" max="7" placeholder="Número da Mesa (1-7)" class="w-full p-6 bg-gray-50 border rounded-3xl text-center text-2xl font-black outline-none focus:border-primary-orange transition-all">
             </div>
             
-            <div id="manual-qr-display" class="hidden mb-8">
-                <div class="p-6 bg-gray-50 rounded-[2rem] inline-block border-2 border-white shadow-inner">
-                    <img id="manual-qr-img" src="" class="w-40 h-40">
+            <div id="manual-qr-display" class="hidden mb-8 relative">
+                <div class="p-6 bg-white rounded-[2rem] inline-block border-4 border-primary-orange shadow-lg relative pt-10">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border-2 border-primary-orange shadow-md">
+                        <span class="text-primary-orange font-black italic tracking-tighter text-sm">Ei Xomano</span>
+                    </div>
+                    <img id="manual-qr-img" src="" class="w-40 h-40 relative z-10">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pt-4">
+                        <div class="bg-white p-1 rounded-xl shadow-md flex items-center justify-center" id="manual-qr-logo-container" style="display: none;">
+                            <img id="manual-qr-rest-logo" src="" class="w-8 h-8 rounded-lg object-cover">
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -551,11 +778,18 @@ function openManualQRModal() {
 function generateKDSManualQR() {
     const tableNum = document.getElementById('manual-table-input').value;
     if (!tableNum || tableNum < 1 || tableNum > 7) return alert("Por favor, insira um número de mesa entre 1 e 7.");
-    
+
     const rest = State.getCurrentRest();
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(window.location.origin + '/?rest=' + rest.id + '&table=' + tableNum)}`;
-    
+
     document.getElementById('manual-qr-img').src = qrUrl;
+    if (rest.logo) {
+        document.getElementById('manual-qr-logo-container').style.display = 'flex';
+        document.getElementById('manual-qr-rest-logo').src = rest.logo;
+    } else {
+        document.getElementById('manual-qr-logo-container').style.display = 'none';
+    }
+
     document.getElementById('manual-qr-display').classList.remove('hidden');
     document.getElementById('btn-gen-qr').classList.add('hidden');
     document.getElementById('btn-print-qr').classList.remove('hidden');
@@ -576,84 +810,120 @@ function renderMapaMesas() {
     const isEssential = user.plan === 'UP';
     const isFree = user.plan === 'UG';
 
-    // Se for grátis, bloqueia o mapa e sugere upgrade
-    if (isFree) {
-        const content = `
-        <div class="animate-fadeIn max-w-2xl mx-auto text-center py-20">
-            <div class="w-24 h-24 bg-orange-50 text-primary-orange rounded-full flex items-center justify-center mx-auto mb-8 text-4xl">
-                <i class="fas fa-lock"></i>
-            </div>
-            <h2 class="text-3xl font-black uppercase italic mb-4">Mapa de Mesas Bloqueado</h2>
-            <p class="text-gray-400 font-bold mb-12">O Mapa de Mesas interativo está disponível a partir do Plano Essencial. No seu plano atual, você pode gerar QR Codes manualmente na tela de Cozinha Digital.</p>
-            <button onclick="navigateTo('planos')" class="ex-btn-primary px-12 py-6 text-sm shadow-2xl">FAZER UPGRADE AGORA</button>
-        </div>`;
-        appContainer.innerHTML = withLayout(content);
-        return;
+    if (!Array.isArray(rest.tables)) {
+        const tableCount = isEnterprise ? (rest.tables || 12) : 12;
+        rest.tables = Array.from({ length: tableCount }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: "Mesa " + (i + 1) }));
+        State.updateCurrentRest(rest);
     }
 
-    // Para Essencial e Empresarial, mostra o Mapa de Mesas
-    const tableCount = isEnterprise ? (rest.tables || 12) : 12;
-    const content = `
-    <div class="animate-fadeIn">
-        <div class="flex justify-between items-center mb-10">
-            <div>
-                <h2 class="text-xl font-black uppercase italic">Mapa de Mesas</h2>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${isEnterprise ? 'Plano Empresarial: Mesas Ilimitadas' : 'Plano Essencial: Limite de 12 Mesas'}</p>
-            </div>
-            ${isEnterprise ? `
-                <button onclick="handleAddTable()" class="ex-btn-primary px-6 py-3 text-xs">+ Adicionar Mesa</button>
-            ` : `
-                <button onclick="alert('A adição de novas mesas é exclusiva do Plano Empresarial. Faça o upgrade para expandir seu negócio!')" class="bg-gray-100 text-gray-400 px-6 py-3 rounded-2xl text-xs font-black uppercase cursor-not-allowed">+ Adicionar Mesa</button>
-            `}
-        </div>
+    let tablesHtml = "";
+    rest.tables.forEach(table => {
+        const isOccupied = rest.orders.some(o => String(o.table) === String(table.number) || String(o.table) === String(table.name));
+        const bgColor = isOccupied ? 'border-primary-orange bg-orange-50/30' : 'bg-white';
+        const iconBg = isOccupied ? 'bg-primary-orange text-white' : 'bg-gray-100 text-gray-400';
+        const statusText = isOccupied ? 'Ocupada' : 'Livre';
+        const statusColor = isOccupied ? 'text-primary-orange' : 'text-gray-300';
 
-        <div class="grid grid-cols-6 gap-6">
-            ${Array.from({length: tableCount}).map((_, i) => {
-                const tableNum = i + 1;
-                const isOccupied = rest.orders.some(o => o.table == tableNum);
-                return `
-                <div onclick="showTableQR(${tableNum})" class="ex-card p-6 ${isOccupied ? 'border-primary-orange bg-orange-50/30' : 'bg-white'} text-center cursor-pointer hover:scale-105 transition-all group">
-                    <div class="w-12 h-12 ${isOccupied ? 'bg-primary-orange text-white' : 'bg-gray-100 text-gray-400'} rounded-2xl flex items-center justify-center mx-auto mb-4 font-black group-hover:shadow-lg transition-all">
-                        ${tableNum}
-                    </div>
-                    <p class="text-[10px] font-black uppercase ${isOccupied ? 'text-primary-orange' : 'text-gray-300'}">
-                        ${isOccupied ? 'Ocupada' : 'Livre'}
-                    </p>
-                    <div class="mt-4 pt-4 border-t opacity-0 group-hover:opacity-100 transition-all">
-                        <span class="text-[8px] font-black text-primary-orange uppercase"><i class="fas fa-qrcode mr-1"></i> Ver QR Code</span>
-                    </div>
-                </div>
-                `;
-            }).join('')}
-        </div>
-    </div>`;
+        let removeBtnHtml = "";
+        if (isEnterprise) {
+            removeBtnHtml = '<button onclick="handleRemoveTable(' + table.id + ')" class="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-500 rounded-full text-[10px] hidden group-hover:flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-times"></i></button>';
+        }
+
+        let qrBtnHtml = "";
+        let qrAction = "";
+        if (!isFree) {
+            const tableId = table.name || table.number;
+            qrAction = "showTableQR('" + tableId + "')";
+            qrBtnHtml = '<div class="mt-4 pt-4 border-t opacity-0 group-hover:opacity-100 transition-all" onclick="' + qrAction + '">' +
+                '<span class="text-[8px] font-black text-primary-orange uppercase"><i class="fas fa-qrcode mr-1"></i> Ver QR Code</span>' +
+                '</div>';
+        } else {
+            qrAction = "alert('No plano gratuito, o QR Code deve ser gerado manualmente na aba de Cozinha Digital.')";
+        }
+
+        tablesHtml += '<div class="relative ex-card p-6 ' + bgColor + ' text-center cursor-pointer hover:scale-105 transition-all group">' +
+            removeBtnHtml +
+            '<div onclick="' + qrAction + '" class="w-12 h-12 ' + iconBg + ' rounded-2xl flex items-center justify-center mx-auto mb-4 font-black group-hover:shadow-lg transition-all">' + table.number + '</div>' +
+            '<p class="text-[10px] font-black uppercase ' + statusColor + '">' + statusText + '</p>' +
+            '<p class="text-[8px] font-bold text-gray-400 mt-1 truncate">' + table.name + '</p>' +
+            qrBtnHtml +
+            '</div>';
+    });
+
+    let addBtnHtml = "";
+    if (isEnterprise) {
+        addBtnHtml = '<button onclick="handleAddTable()" class="ex-btn-primary px-6 py-3 text-xs">+ Adicionar Mesa</button>';
+    } else if (isFree) {
+        addBtnHtml = '<button onclick="openManualQRModal()" class="bg-slate-800 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-700 transition-all shadow-lg"><i class="fas fa-qrcode mr-2"></i> Gerar QR Mesa</button>';
+    } else {
+        addBtnHtml = '<button onclick="alert(\'A adição de novas mesas é exclusiva do Plano Empresarial. Faça o upgrade para expandir seu negócio!\')" class="bg-gray-100 text-gray-400 px-6 py-3 rounded-2xl text-xs font-black uppercase cursor-not-allowed">+ Adicionar Mesa</button>';
+    }
+
+    const planText = isEnterprise ? 'Plano Empresarial: Mesas Ilimitadas' : (isEssential ? 'Plano Essencial: Limite de 12 Mesas' : 'Plano Gratuito: Visualização Básica');
+
+    const content = '<div class="animate-fadeIn">' +
+        '<div class="flex justify-between items-center mb-10">' +
+        '<div>' +
+        '<h2 class="text-xl font-black uppercase italic">Mapa de Mesas</h2>' +
+        '<p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">' + planText + '</p>' +
+        '</div>' +
+        addBtnHtml +
+        '</div>' +
+        '<div class="grid grid-cols-6 gap-6">' +
+        tablesHtml +
+        '</div>' +
+        '</div>';
+
     appContainer.innerHTML = withLayout(content);
 }
 
-function generateManualQR() {
-    const tableName = document.getElementById('manual-table-name').value;
-    if (!tableName) return alert("Digite o nome ou número da mesa!");
-    
+function handleAddTable() {
     const rest = State.getCurrentRest();
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(window.location.origin + '/?rest=' + rest.id + '&table=' + tableName)}`;
-    
-    document.getElementById('qr-image').src = qrUrl;
-    document.getElementById('qr-table-label').innerText = "MESA: " + tableName;
-    document.getElementById('qr-result').classList.remove('hidden');
+    const newNumber = rest.tables.length > 0 ? Math.max(...rest.tables.map(t => t.number)) + 1 : 1;
+    const name = prompt("Digite o nome ou número da nova mesa:", `Mesa ${newNumber}`);
+    if (!name) return;
+
+    rest.tables.push({
+        id: Date.now(),
+        number: newNumber,
+        name: name
+    });
+    State.updateCurrentRest(rest);
+    renderMapaMesas();
 }
+
+function handleRemoveTable(id) {
+    if (!confirm("Tem certeza que deseja remover esta mesa?")) return;
+    const rest = State.getCurrentRest();
+    rest.tables = rest.tables.filter(t => t.id !== id);
+    State.updateCurrentRest(rest);
+    renderMapaMesas();
+}
+
+
 
 function showTableQR(tableNum) {
     const rest = State.getCurrentRest();
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(window.location.origin + '/?rest=' + rest.id + '&table=' + tableNum)}`;
-    
+
     const modalHtml = `
     <div id="modal-qr" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn">
         <div class="bg-white w-full max-w-md rounded-[3rem] p-12 text-center shadow-2xl">
             <h3 class="text-2xl font-black uppercase italic mb-2">QR Code da Mesa ${tableNum}</h3>
             <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-10">Acesso Direto ao Cardápio</p>
             
-            <div class="p-8 bg-gray-50 rounded-[3rem] inline-block border-4 border-white shadow-inner mb-8">
-                <img src="${qrUrl}" class="w-48 h-48">
+            <div class="p-8 bg-white rounded-[3rem] inline-block border-4 border-primary-orange shadow-lg mb-8 relative pt-12">
+                <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-white px-5 py-2 rounded-full border-4 border-primary-orange shadow-md">
+                    <span class="text-primary-orange font-black italic tracking-tighter text-base">Ei Xomano</span>
+                </div>
+                <img src="${qrUrl}" class="w-48 h-48 relative z-10">
+                ${rest.logo ? `
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pt-6">
+                    <div class="bg-white p-2 rounded-2xl shadow-lg">
+                        <img src="${rest.logo}" class="w-10 h-10 rounded-xl object-cover">
+                    </div>
+                </div>
+                ` : ''}
             </div>
             
             <div class="flex gap-4">
@@ -663,13 +933,6 @@ function showTableQR(tableNum) {
         </div>
     </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
-
-function handleAddTable() {
-    const rest = State.getCurrentRest();
-    rest.tables = (rest.tables || 12) + 1;
-    State.updateCurrentRest(rest);
-    renderMapaMesas();
 }
 
 // --- TELA: PRODUTOS ---
@@ -746,7 +1009,7 @@ function handleProductImageUpload(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             tempProductImage = e.target.result;
             document.getElementById('prod-image').value = ''; // Limpa URL se subir arquivo
         };
@@ -769,13 +1032,13 @@ function handleAddProduct() {
     if (!name || isNaN(price)) return alert("Preencha nome e preço corretamente.");
 
     const rest = State.getCurrentRest();
-    rest.products.push({ 
-        id: Date.now(), 
-        name, 
-        price, 
-        description, 
-        image: tempProductImage || image, 
-        category 
+    rest.products.push({
+        id: Date.now(),
+        name,
+        price,
+        description,
+        image: tempProductImage || image,
+        category
     });
     State.updateCurrentRest(rest);
     tempProductImage = null; // Reseta após salvar
@@ -965,7 +1228,13 @@ function renderClienteMenu() {
     const cartTotal = tempOrder.reduce((acc, i) => acc + (i.price * i.qnt), 0);
 
     appContainer.innerHTML = `
-    <div class="min-h-screen bg-gray-50 animate-fadeIn">
+    <div class="min-h-screen bg-gray-50 animate-fadeIn relative">
+        <!-- Logo Centralizada do Sistema e do Restaurante -->
+        <div class="absolute top-8 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center pointer-events-none">
+            <h1 class="text-lg font-black text-primary-orange italic tracking-tighter drop-shadow-md">Ei Xomano</h1>
+            ${rest.logo ? `<img src="${rest.logo}" class="w-8 h-8 rounded-full border-2 border-white shadow mt-1 object-cover">` : ''}
+        </div>
+
         <header class="bg-white p-8 border-b sticky top-0 z-30">
             <div class="max-w-xl mx-auto flex justify-between items-center">
                 <div>
@@ -1068,7 +1337,7 @@ function addToOrder(id) {
     const rest = State.getCurrentRest();
     const product = rest.products.find(p => p.id === id);
     const existing = tempOrder.find(i => i.id === id);
-    
+
     if (existing) {
         existing.qnt++;
     } else {
@@ -1087,17 +1356,17 @@ function updateCartQnt(index, delta) {
 }
 
 function confirmOrder() {
-    if(tempOrder.length === 0) return alert("Seu carrinho está vazio!");
-    
+    if (tempOrder.length === 0) return alert("Seu carrinho está vazio!");
+
     const rest = State.getCurrentRest();
     const newOrder = {
         id: Date.now(),
         table: 12,
-        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         items: [...tempOrder],
-        status: 'preparando'
+        status: 'em preparo'
     };
-    
+
     rest.orders.push(newOrder);
     State.updateCurrentRest(rest);
     tempOrder = [];
@@ -1163,8 +1432,24 @@ function renderAcompanhamento() {
 
 // --- TELA: UA (ADMIN GLOBAL - SUPREMO) ---
 function renderUA() {
-    const rests = State.getRestaurants();
+    let rests = State.getRestaurants();
     const accounts = State.getAccounts();
+
+    // PATCH DE DADOS LEGADOS: Se algum restaurante não tiver dono (criado em versões antigas), atrelamos ao primeiro usuário válido do sistema.
+    let needsSave = false;
+    rests.forEach(r => {
+        if (!r.ownerEmail) {
+            const firstUser = accounts.find(a => a.role !== 'UA');
+            if (firstUser) {
+                r.ownerEmail = firstUser.email;
+                needsSave = true;
+            }
+        }
+    });
+    if (needsSave) {
+        localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+    }
+
     const totalMRR = rests.reduce((acc, r) => {
         const owner = accounts.find(a => a.email === r.ownerEmail);
         const prices = { 'UG': 0, 'UP': 49.90, 'UE': 99.90 };
@@ -1239,21 +1524,24 @@ function renderUA() {
                     </thead>
                     <tbody class="text-slate-600 font-bold text-sm">
                         ${rests.map(r => {
-                            const owner = accounts.find(a => a.email === r.ownerEmail);
-                            const planName = owner?.plan === 'UE' ? 'Empresarial' : owner?.plan === 'UP' ? 'Essencial' : 'Gratuito';
-                            const planColor = owner?.plan === 'UE' ? 'bg-purple-100 text-purple-600' : owner?.plan === 'UP' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600';
-                            const price = owner?.plan === 'UE' ? 99.90 : owner?.plan === 'UP' ? 49.90 : 0;
-                            
-                            return `
-                            <tr class="border-b hover:bg-gray-50 transition-all">
+        const owner = accounts.find(a => a.email === r.ownerEmail);
+        const planName = owner?.plan === 'UE' ? 'Empresarial' : owner?.plan === 'UP' ? 'Essencial' : 'Gratuito';
+        const planColor = owner?.plan === 'UE' ? 'bg-purple-100 text-purple-600' : owner?.plan === 'UP' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600';
+        const price = owner?.plan === 'UE' ? 99.90 : owner?.plan === 'UP' ? 49.90 : 0;
+        const isNew = r.createdAt && (Date.now() - r.createdAt < 86400000); // 24h
+        const isSuspended = r.status === 'suspenso';
+
+        return `
+                            <tr class="border-b hover:bg-gray-50 transition-all ${isSuspended ? 'opacity-50' : ''}">
                                 <td class="p-6">
                                     <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
-                                            <i class="fas fa-store"></i>
+                                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 relative">
+                                            ${r.logo ? `<img src="${r.logo}" class="w-full h-full rounded-lg object-cover">` : `<i class="fas fa-store"></i>`}
+                                            ${isNew ? `<span class="absolute -top-2 -right-2 bg-green-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">Novo</span>` : ''}
                                         </div>
                                         <div>
-                                            <p class="text-slate-800">${r.name}</p>
-                                            <p class="text-[10px] text-slate-400">Desde 14/01/2026</p>
+                                            <p class="text-slate-800 font-black">${r.name}</p>
+                                            <p class="text-[10px] text-slate-400">Criado em: ${r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A'}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -1262,21 +1550,28 @@ function renderUA() {
                                     <span class="px-3 py-1 rounded-full text-[10px] uppercase font-black ${planColor}">${planName}</span>
                                 </td>
                                 <td class="p-6">
-                                    <div class="flex items-center gap-2 text-green-600">
-                                        <i class="fas fa-check-circle text-[10px]"></i> Ativo
-                                    </div>
+                                    ${isSuspended ? `
+                                        <div class="flex items-center gap-2 text-red-600">
+                                            <i class="fas fa-ban text-[10px]"></i> Suspenso
+                                        </div>
+                                    ` : `
+                                        <div class="flex items-center gap-2 text-green-600">
+                                            <i class="fas fa-check-circle text-[10px]"></i> Ativo
+                                        </div>
+                                    `}
                                 </td>
-                                <td class="p-6">12</td>
+                                <td class="p-6">${r.tables ? r.tables.length : 12}</td>
                                 <td class="p-6 text-slate-800">R$ ${price.toFixed(2)}</td>
                                 <td class="p-6">
                                     <div class="flex items-center gap-3">
-                                        <button class="bg-red-50 text-red-500 px-4 py-2 rounded-lg text-[10px] uppercase font-black hover:bg-red-100 transition-all">Suspender</button>
-                                        <i class="fas fa-ellipsis-v text-slate-300 cursor-pointer"></i>
+                                        <button onclick="toggleRestaurantStatus(${r.id})" class="${isSuspended ? 'bg-green-50 text-green-500 hover:bg-green-100' : 'bg-red-50 text-red-500 hover:bg-red-100'} px-4 py-2 rounded-lg text-[10px] uppercase font-black transition-all">
+                                            ${isSuspended ? 'Ativar' : 'Suspender'}
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
                             `;
-                        }).join('')}
+    }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -1295,6 +1590,16 @@ function renderUA() {
     </div>`;
 }
 
+function toggleRestaurantStatus(restId) {
+    const rests = State.getRestaurants();
+    const rest = rests.find(r => r.id === restId);
+    if (rest) {
+        rest.status = rest.status === 'suspenso' ? 'ativo' : 'suspenso';
+        localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+        renderUA();
+    }
+}
+
 // --- UTILS ---
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
@@ -1307,8 +1612,8 @@ function startSync() {
     syncInterval = setInterval(() => {
         // Apenas atualiza o conteúdo se estivermos em telas que dependem de dados em tempo real
         // SEM chamar navigateTo ou resetar o innerHTML de forma agressiva
-        if(currentActiveView === 'acompanhamento') renderAcompanhamento();
-        if(currentActiveView === 'kds') renderKDS();
+        if (currentActiveView === 'acompanhamento') renderAcompanhamento();
+        if (currentActiveView === 'kds') renderKDS();
         // Dashboard não precisa de re-render constante para não atrapalhar o uso
     }, 10000); // Aumentado para 10 segundos para ser menos intrusivo
 }
