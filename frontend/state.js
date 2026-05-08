@@ -75,49 +75,98 @@ const State = {
         }
     },
 
-    // --- NOVA GESTÃO DE AUTENTICAÇÃO (Login e Cadastro) ---
-    login(email, pass) {
-        const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
-        const user = accounts.find(a => a.email === email && a.pass === pass);
-        if (user) {
-            this.setUser(user);
-            return user;
+    // --- NOVA GESTÃO DE AUTENTICAÇÃO (Login e Cadastro com Banco de Dados) ---
+    async login(email, pass) {
+        try {
+            const response = await fetch('http://localhost:3000/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, pass })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                // Sincronizar com localStorage
+                const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+                const existingIndex = accounts.findIndex(a => a.email === email);
+                if (existingIndex >= 0) accounts[existingIndex] = data.user;
+                else accounts.push(data.user);
+                localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+                
+                if (data.restaurant) {
+                    const rests = this.getRestaurants();
+                    const restIndex = rests.findIndex(r => r.id == data.restaurant.id);
+                    const frontendRest = {
+                        ...data.restaurant,
+                        products: [], staff: [], orders: [],
+                        tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
+                    };
+                    if (restIndex >= 0) rests[restIndex] = { ...rests[restIndex], ...data.restaurant };
+                    else rests.push(frontendRest);
+                    localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+                    localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, data.restaurant.id);
+                }
+                
+                this.setUser(data.user);
+                return data.user;
+            }
+            return null;
+        } catch (error) {
+            console.error('Erro na API, usando LocalStorage fallback:', error);
+            const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+            const user = accounts.find(a => a.email === email && a.pass === pass);
+            if (user) {
+                this.setUser(user);
+                return user;
+            }
+            return null;
         }
-        return null;
     },
 
-    register(email, pass, name, restaurantName) {
-        const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
-        if (accounts.find(a => a.email === email)) return { success: false, msg: 'E-mail já cadastrado' };
+    async register(email, pass, name, restaurantName) {
+        try {
+            const response = await fetch('http://localhost:3000/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, pass, name: name || email.split('@')[0], restName: restaurantName || 'Meu Restaurante' })
+            });
+            const data = await response.json();
 
-        const newUser = {
-            email,
-            pass,
-            name: name || email.split('@')[0],
-            role: 'UR',
-            plan: 'UG'
-        };
-        accounts.push(newUser);
-        localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+            if (!data.success) return { success: false, msg: data.msg };
 
-        // Criar restaurante para o novo usuário
-        const rests = this.getRestaurants();
-        const newRest = {
-            id: Date.now(),
-            name: restaurantName || 'Meu Restaurante',
-            logo: '',
-            ownerEmail: email,
-            createdAt: Date.now(),
-            status: 'ativo',
-            products: [],
-            staff: [],
-            orders: [],
-            tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
-        };
-        rests.push(newRest);
-        localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+            const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+            accounts.push(data.user);
+            localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
 
-        return { success: true };
+            const rests = this.getRestaurants();
+            const frontendRest = {
+                ...data.restaurant,
+                products: [], staff: [], orders: [],
+                tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
+            };
+            rests.push(frontendRest);
+            localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+
+            return { success: true };
+        } catch (error) {
+            console.error('Erro na API, usando LocalStorage fallback:', error);
+            const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
+            if (accounts.find(a => a.email === email)) return { success: false, msg: 'E-mail já cadastrado' };
+
+            const newUser = { email, pass, name: name || email.split('@')[0], role: 'UR', plan: 'UG' };
+            accounts.push(newUser);
+            localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+
+            const rests = this.getRestaurants();
+            const newRest = {
+                id: Date.now(), name: restaurantName || 'Meu Restaurante', logo: '', ownerEmail: email, createdAt: Date.now(), status: 'ativo',
+                products: [], staff: [], orders: [], tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
+            };
+            rests.push(newRest);
+            localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
+
+            return { success: true };
+        }
     },
 
     logout() {
@@ -245,12 +294,39 @@ const State = {
             .sort((a, b) => b.qnt - a.qnt)
             .slice(0, 5);
 
+        // Performance da Equipe (Vendas, Mesas, Lucro)
+        const staffPerformance = {};
+        orders.forEach(o => {
+            if (o.waiterId) {
+                if (!staffPerformance[o.waiterId]) {
+                    const staffMember = rest.staff.find(s => s.id == o.waiterId);
+                    staffPerformance[o.waiterId] = { 
+                        name: staffMember ? staffMember.name : 'Desconhecido', 
+                        sales: 0, 
+                        tablesServed: new Set(), 
+                        profit: 0 
+                    };
+                }
+                const orderTotal = o.items.reduce((sum, i) => sum + (i.price * i.qnt), 0);
+                staffPerformance[o.waiterId].sales += orderTotal;
+                staffPerformance[o.waiterId].profit += orderTotal * 0.30; // Margem base de 30%
+                staffPerformance[o.waiterId].tablesServed.add(o.table);
+            }
+        });
+
+        const staffStats = Object.values(staffPerformance).map(s => ({
+            ...s,
+            tablesServed: s.tablesServed.size
+        }));
+
         return {
             totalSales,
             orderCount: orders.length,
             ticketMedio,
             topProducts,
-            activeTables: [...new Set(orders.filter(o => o.status !== 'finalizado').map(o => o.table))].length
+            activeTables: [...new Set(orders.filter(o => o.status !== 'finalizado').map(o => o.table))].length,
+            staffStats,
+            totalProfit: totalSales * 0.30
         };
     }
 };

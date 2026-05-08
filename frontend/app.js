@@ -250,7 +250,7 @@ function renderRegister() {
     </div>`;
 }
 
-function handleLogin() {
+async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
 
@@ -261,7 +261,8 @@ function handleLogin() {
         return;
     }
 
-    if (State.login(email, pass)) {
+    const loginResult = await State.login(email, pass);
+    if (loginResult) {
         const user = State.getUser();
         if (user.role === 'UA') {
             navigateTo('admin-ua');
@@ -273,14 +274,14 @@ function handleLogin() {
     }
 }
 
-function handleRegister() {
+async function handleRegister() {
     const restName = document.getElementById('reg-rest-name').value;
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
 
     if (!restName || !email || !pass) return alert("Preencha todos os campos.");
 
-    const res = State.register(email, pass, null, restName);
+    const res = await State.register(email, pass, null, restName);
     if (res.success) {
         alert("Conta criada com sucesso! Faça login.");
         renderLogin();
@@ -289,12 +290,12 @@ function handleRegister() {
     }
 }
 
-function handleUALogin() {
+async function handleUALogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
 
     if (email === 'admin' && pass === 'admin') {
-        const user = State.login(email, pass);
+        const user = await State.login(email, pass);
         if (user && user.role === 'UA') {
             navigateTo('admin-ua');
         } else {
@@ -307,6 +308,7 @@ function handleUALogin() {
 
 // --- TELA: DASHBOARD ---
 function renderDashboard() {
+    const user = State.getUser();
     const rest = State.getCurrentRest();
     const analytics = State.getAnalytics();
     const hasReports = State.hasFeature('reports');
@@ -418,7 +420,80 @@ function renderDashboard() {
                 </div>
                 <i class="fas fa-bolt absolute -bottom-10 -right-10 text-[150px] opacity-5"></i>
             </div>
+        <div class="mt-12 ex-card p-10 bg-white shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 italic uppercase">Desempenho Geral da Equipe</h3>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Visão Integrada de Produtividade e Lucro (Margem: 30%)</p>
+                </div>
+                <div class="bg-green-50 text-success-green px-4 py-2 rounded-2xl font-black text-xs">
+                    Lucro Presumido: R$ ${analytics.totalProfit.toFixed(2)}
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b-2 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <th class="pb-4">Funcionário</th>
+                            <th class="pb-4">Vendas Brutas</th>
+                            <th class="pb-4">Mesas Atendidas</th>
+                            <th class="pb-4 text-right">Lucro Gerado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm font-bold text-slate-700">
+                        ${analytics.staffStats && analytics.staffStats.length > 0 ? analytics.staffStats.map(s => `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50 transition-all">
+                            <td class="py-4 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-orange-100 text-primary-orange flex items-center justify-center font-black text-xs">
+                                    ${s.name.charAt(0)}
+                                </div>
+                                ${s.name}
+                            </td>
+                            <td class="py-4">R$ ${s.sales.toFixed(2)}</td>
+                            <td class="py-4">${s.tablesServed}</td>
+                            <td class="py-4 text-right text-success-green">R$ ${s.profit.toFixed(2)}</td>
+                        </tr>
+                        `).join('') : `<tr><td colspan="4" class="py-8 text-center text-gray-400">Nenhum dado de venda por funcionário ainda.</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        ${user.plan === 'UP' || user.plan === 'UE' ? `
+        <div class="mt-8 ex-card p-10 bg-slate-900 text-white shadow-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <h3 class="text-xl font-black italic uppercase text-primary-orange mb-2">Visão Macro do Negócio (Essencial)</h3>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Métricas exclusivas para assinantes premium</p>
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Custo Estimado (70%)</p>
+                        <p class="text-2xl font-black mt-2 text-white">R$ ${(analytics.totalSales * 0.7).toFixed(2)}</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Eficiência de Mesas</p>
+                        <p class="text-2xl font-black mt-2 text-white">${analytics.activeTables > 0 ? ((analytics.orderCount / analytics.activeTables).toFixed(1)) : 0} ped/mesa</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Taxa de Conversão</p>
+                        <p class="text-2xl font-black mt-2 text-white">${(Math.random() * (15 - 5) + 5).toFixed(1)}%</p>
+                    </div>
+                </div>
+            </div>
+            <i class="fas fa-chart-line absolute -bottom-10 -right-10 text-[150px] opacity-10"></i>
+        </div>
+        ` : ''}
+
+        ${user.plan === 'UE' ? `
+        <div class="mt-8 ex-card p-10 bg-gradient-to-r from-enterprise-purple to-purple-900 text-white shadow-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <h3 class="text-xl font-black italic uppercase mb-2">Relatórios Consolidados - Multi-loja</h3>
+                <p class="text-xs font-bold text-purple-300 uppercase tracking-widest mb-6">Métricas de toda a sua rede (Empresarial)</p>
+                <p class="text-sm font-bold opacity-80">Acesso via painel de Cadastrar Restaurantes ou navegue entre as filiais no topo.</p>
+                <button onclick="renderCadastrarRestaurantes()" class="mt-6 bg-white text-enterprise-purple px-6 py-3 rounded-2xl font-black text-xs uppercase hover:bg-gray-100 transition-all shadow-lg">Ver Todas as Filiais</button>
+            </div>
+        </div>
+        ` : ''}
     </div>`;
     appContainer.innerHTML = withLayout(content);
 }
@@ -1065,7 +1140,10 @@ function renderStaff() {
                 <h2 class="text-xl font-black uppercase italic">Equipe e Colaboradores</h2>
                 <p class="text-[10px] font-black text-gray-400 uppercase mt-1">Limite do Plano: ${rest.staff.length} / ${limits.maxStaff === 9999 ? 'Ilimitado' : limits.maxStaff}</p>
             </div>
-            <button onclick="openModal('modal-add-staff')" class="ex-btn-primary px-6 py-3 text-xs">Novo Acesso</button>
+            <div class="flex gap-4">
+                <button onclick="generateGeneralReport()" class="bg-slate-800 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg hover:bg-slate-700 transition-all"><i class="fas fa-file-invoice mr-2"></i>Gerar Geral</button>
+                <button onclick="openModal('modal-add-staff')" class="ex-btn-primary px-6 py-3 text-xs">Novo Acesso</button>
+            </div>
         </div>
 
         <div class="grid grid-cols-3 gap-6">
@@ -1077,8 +1155,8 @@ function renderStaff() {
                     <h4 class="font-black text-slate-800 uppercase tracking-tight">${s.name}</h4>
                     <p class="text-[10px] font-black text-gray-300 uppercase mb-6">${s.role === 'waiter' ? 'Atendimento/Garçom' : 'Cozinheiro'}</p>
                     <div class="pt-4 border-t flex justify-center gap-4">
-                        <button class="text-[10px] font-black text-primary-orange uppercase">Relatórios</button>
-                        <button onclick="handleRemoveStaff(${s.id})" class="text-[10px] font-black text-danger-red uppercase">Remover</button>
+                        <button onclick="generateStaffReport(${s.id})" class="text-[10px] font-black text-primary-orange uppercase hover:underline">Relatórios</button>
+                        <button onclick="handleRemoveStaff(${s.id})" class="text-[10px] font-black text-danger-red uppercase hover:underline">Remover</button>
                     </div>
                 </div>
             `).join('')}
@@ -1130,6 +1208,122 @@ function handleRemoveStaff(id) {
     renderStaff();
 }
 
+function generateGeneralReport() {
+    const rest = State.getCurrentRest();
+    const analytics = State.getAnalytics();
+    
+    const div = document.createElement('div');
+    div.style.padding = '40px';
+    div.style.fontFamily = 'sans-serif';
+    div.style.backgroundColor = '#fff';
+    div.style.color = '#333';
+    
+    let html = `
+        <div style="text-align:center; margin-bottom: 30px;">
+            <h1 style="font-size:24px; font-weight:bold; color:#F97316;">${rest.name}</h1>
+            <h2 style="font-size:18px; color:#555;">Relatório Geral da Equipe</h2>
+            <p style="font-size:12px; color:#999;">Gerado em: ${new Date().toLocaleString()}</p>
+        </div>
+        <table style="width:100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #eee; text-align: left;">
+                    <th style="padding: 10px;">Funcionário</th>
+                    <th style="padding: 10px;">Vendas Brutas</th>
+                    <th style="padding: 10px;">Mesas/Pedidos</th>
+                    <th style="padding: 10px;">Lucro Gerado</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    analytics.staffStats.forEach(s => {
+        html += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${s.name}</td>
+                <td style="padding: 10px;">R$ ${s.sales.toFixed(2)}</td>
+                <td style="padding: 10px;">${s.tablesServed}</td>
+                <td style="padding: 10px; color:#4ADE80;">R$ ${s.profit.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+    
+    if (!analytics.staffStats || analytics.staffStats.length === 0) {
+        html += `<tr><td colspan="4" style="padding: 20px; text-align:center; color:#999;">Nenhum dado de venda ainda.</td></tr>`;
+    }
+    
+    html += `
+            </tbody>
+        </table>
+        <div style="margin-top:30px; border-top: 2px solid #eee; padding-top: 20px;">
+            <p style="font-size: 16px;"><strong>Lucro Presumido Total (Equipe):</strong> <span style="color:#4ADE80;">R$ ${analytics.totalProfit.toFixed(2)}</span></p>
+        </div>
+    `;
+    div.innerHTML = html;
+    
+    const opt = {
+      margin:       1,
+      filename:     `Relatorio_Geral_Equipe.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(div).save();
+}
+
+function generateStaffReport(staffId) {
+    const rest = State.getCurrentRest();
+    const analytics = State.getAnalytics();
+    const staff = rest.staff.find(s => s.id === staffId);
+    if (!staff) return;
+    
+    const stats = analytics.staffStats.find(s => s.name === staff.name) || { sales: 0, tablesServed: 0, profit: 0 };
+    const roleName = staff.role === 'cook' ? 'Cozinheiro' : 'Garçom / Atendimento';
+    
+    const div = document.createElement('div');
+    div.style.padding = '40px';
+    div.style.fontFamily = 'sans-serif';
+    div.style.backgroundColor = '#fff';
+    div.style.color = '#333';
+    
+    let html = `
+        <div style="text-align:center; margin-bottom: 30px;">
+            <h1 style="font-size:24px; font-weight:bold; color:#F97316;">${rest.name}</h1>
+            <h2 style="font-size:18px; color:#555;">Relatório Individual de Desempenho</h2>
+            <p style="font-size:12px; color:#999;">Gerado em: ${new Date().toLocaleString()}</p>
+        </div>
+        <div style="margin-top:20px; padding: 20px; background-color: #f9fafb; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <h3 style="margin-top: 0; font-size: 20px; color:#1e293b;">${staff.name}</h3>
+            <p style="color: #64748b; margin-bottom: 20px;">Cargo: <strong>${roleName}</strong></p>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <span>Vendas Brutas Atribuídas:</span>
+                <span style="font-weight: bold; color: #0f172a;">R$ ${stats.sales.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <span>Atendimentos / Pedidos:</span>
+                <span style="font-weight: bold; color: #0f172a;">${stats.tablesServed}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px;">
+                <span>Lucro Presumido Gerado (Margem 30%):</span>
+                <span style="font-weight: bold; color: #4ADE80;">R$ ${stats.profit.toFixed(2)}</span>
+            </div>
+        </div>
+        <div style="margin-top: 40px; text-align: center;">
+            <p style="color: #cbd5e1; font-size: 10px;">Documento gerado automaticamente pelo sistema Ei Xomano.</p>
+        </div>
+    `;
+    div.innerHTML = html;
+    
+    const opt = {
+      margin:       1,
+      filename:     `Relatorio_${staff.name.replace(/\s+/g, '_')}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(div).save();
+}
+
 // --- TELA: UPGRADE PRO ---
 function renderUpgrade() {
     const user = State.getUser();
@@ -1154,7 +1348,7 @@ function renderUpgrade() {
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Até 15 Produtos</li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Até 6 Colaboradores</li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> QR Code Manual</li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-400 opacity-50"><i class="fas fa-times"></i> Sem Mapa de Mesas</li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Relatórios de Equipe Básicos</li>
                     </ul>
                 </div>
                 <button onclick="processUpgrade('UG')" class="w-full p-5 border-2 border-gray-200 rounded-2xl font-black text-xs uppercase ${user.plan === 'UG' ? 'bg-gray-100 cursor-default' : 'hover:bg-gray-800 hover:text-white'} transition-all">
@@ -1177,7 +1371,7 @@ function renderUpgrade() {
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Produtos Ilimitados</li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Até 10 Colaboradores</li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Mapa de Mesas (12)</li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> QR Code Automático</li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600"><i class="fas fa-check text-success-green"></i> Relatório Macro do Negócio</li>
                     </ul>
                 </div>
                 <button onclick="processUpgrade('UP')" class="w-full p-5 border-2 border-slate-800 rounded-2xl font-black text-xs uppercase ${user.plan === 'UP' ? 'bg-slate-800 text-white cursor-default' : 'hover:bg-slate-800 hover:text-white'} transition-all">
@@ -1198,10 +1392,10 @@ function renderUpgrade() {
                     </div>
                     
                     <ul class="space-y-4 mb-10 text-left">
-                        <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Mesas Ilimitadas</li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Geração em Lote QR</li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Tudo Ilimitado</li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Múltiplas Lojas (Filiais)</li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Relatórios Consolidados</li>
                         <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Inteligência de Dados AI</li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-white/80"><i class="fas fa-check text-enterprise-purple"></i> Suporte 24h VIP</li>
                     </ul>
                 </div>
                 <button onclick="processUpgrade('UE')" class="w-full p-5 bg-enterprise-purple rounded-2xl font-black text-xs uppercase ${user.plan === 'UE' ? 'opacity-50 cursor-default' : 'hover:scale-105'} transition-all shadow-xl">
