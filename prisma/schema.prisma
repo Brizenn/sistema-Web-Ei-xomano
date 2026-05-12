@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id           Int           @id @default(autoincrement())
+  nome         String        @db.VarChar(100)
+  email        String        @unique @db.VarChar(100)
+  senha        String
+  cpf          String?       @db.VarChar(14)
+  cargo        String?       @default("UR") @db.VarChar(5)
+  criadoEm     DateTime?     @default(now()) @map("criado_em")
+  restaurantes Restaurante[]
+
+  @@map("usuarios")
+}
+
+model Restaurante {
+  id         Int                @id @default(autoincrement())
+  nome       String             @db.VarChar(100)
+  telefone   String?            @db.VarChar(20)
+  dono       Usuario            @relation(fields: [donoId], references: [id], onDelete: Restrict)
+  donoId     Int                @map("dono_id")
+  plano      String?            @db.VarChar(5)
+  ativo      Boolean?           @default(true)
+  deletadoEm DateTime?          @map("deletado_em")
+  criadoEm   DateTime?          @default(now()) @map("criado_em")
+  produtos   Produto[]
+  pedidos    Pedido[]
+  metricas   DashboardMetrica[]
+
+  @@map("restaurantes")
+}
+
+model Produto {
+  id            Int         @id @default(autoincrement())
+  restaurante   Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  restauranteId Int         @map("restaurante_id")
+  nome          String      @db.VarChar(100)
+  preco         Decimal     @db.Decimal(10, 2)
+  categoria     String?     @db.VarChar(50)
+
+  @@map("produtos")
+}
+
+model Pedido {
+  id            Int         @id @default(autoincrement())
+  restaurante   Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  restauranteId Int         @map("restaurante_id")
+  valorTotal    Decimal?    @default(0.00) @map("valor_total") @db.Decimal(15, 2)
+  criadoEm      DateTime?   @default(now()) @map("criado_em")
+
+  @@map("pedidos")
+}
+
+model DashboardMetrica {
+  id              Int         @id @default(autoincrement())
+  restaurante     Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  restauranteId   Int         @map("restaurante_id")
+  periodoMesAno   String      @map("periodo_mes_ano") @db.VarChar(7)
+  faturamentoTotal Decimal?   @default(0.00) @map("faturamento_total") @db.Decimal(15, 2)
+  qtdPedidosTotal Int?        @default(0) @map("qtd_pedidos_total")
+  ultimaAtualizacao DateTime? @default(now()) @map("ultima_atualizacao")
+
+  @@map("dashboard_metricas")
+}
+
+model LogErro {
+  id        Int       @id @default(autoincrement())
+  mensagem  String?
+  origem    String?   @db.VarChar(50)
+  dataErro  DateTime? @default(now()) @map("data_erro")
+
+  @@map("logs_erro")
+}

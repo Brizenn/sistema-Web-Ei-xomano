@@ -23,8 +23,8 @@ router.post('/register', async (req, res) => {
 
     // Inserir usuário
     const userResult = await client.query(
-      `INSERT INTO usuarios (nome, email, senha, cargo, plano) 
-       VALUES ($1, $2, $3, 'UR', 'UG') RETURNING *`,
+      `INSERT INTO usuarios (nome, email, senha, cargo) 
+       VALUES ($1, $2, $3, 'UR') RETURNING *`,
       [name, email, pass] // ATENÇÃO: Senha em texto plano para desenvolvimento. Num app real, use bcrypt.
     );
     
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
       pass: user.senha,
       name: user.nome,
       role: user.cargo,
-      plan: user.plano
+      plan: restaurant ? restaurant.plano : null
     };
 
     res.status(200).json({

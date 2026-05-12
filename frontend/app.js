@@ -21,6 +21,7 @@ function navigateTo(view) {
             case 'acompanhamento': renderAcompanhamento(); break;
             case 'perfil': renderPerfil(); break;
             case 'admin-ua': renderUA(); break;
+            case 'consolidado': renderConsolidado(); break;
             default: renderLogin();
         }
     } catch (e) {
@@ -420,39 +421,39 @@ function renderDashboard() {
                 </div>
                 <i class="fas fa-bolt absolute -bottom-10 -right-10 text-[150px] opacity-5"></i>
             </div>
-        <div class="mt-12 ex-card p-10 bg-white shadow-sm border border-gray-100">
-            <div class="flex justify-between items-center mb-8">
-                <div>
+        <div class="mt-12 ex-card p-8 bg-white shadow-sm border border-gray-100">
+            <div class="flex flex-wrap justify-between items-start md:items-center gap-4 mb-8">
+                <div class="flex-1 min-w-[200px]">
                     <h3 class="text-xl font-black text-slate-800 italic uppercase">Desempenho Geral da Equipe</h3>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Visão Integrada de Produtividade e Lucro (Margem: 30%)</p>
                 </div>
-                <div class="bg-green-50 text-success-green px-4 py-2 rounded-2xl font-black text-xs">
+                <div class="bg-green-50 text-success-green px-4 py-3 rounded-2xl font-black text-xs shrink-0">
                     Lucro Presumido: R$ ${analytics.totalProfit.toFixed(2)}
                 </div>
             </div>
             
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
+            <div class="overflow-x-auto pb-4">
+                <table class="w-full text-left min-w-[600px]">
                     <thead>
                         <tr class="border-b-2 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                            <th class="pb-4">Funcionário</th>
-                            <th class="pb-4">Vendas Brutas</th>
-                            <th class="pb-4">Mesas Atendidas</th>
-                            <th class="pb-4 text-right">Lucro Gerado</th>
+                            <th class="pb-4 pr-4 whitespace-nowrap">Funcionário</th>
+                            <th class="pb-4 px-4 whitespace-nowrap">Vendas Brutas</th>
+                            <th class="pb-4 px-4 whitespace-nowrap">Mesas Atendidas</th>
+                            <th class="pb-4 pl-4 text-right whitespace-nowrap">Lucro Gerado</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm font-bold text-slate-700">
                         ${analytics.staffStats && analytics.staffStats.length > 0 ? analytics.staffStats.map(s => `
                         <tr class="border-b border-gray-50 hover:bg-gray-50 transition-all">
-                            <td class="py-4 flex items-center gap-3">
+                            <td class="py-4 pr-4 flex items-center gap-3 whitespace-nowrap">
                                 <div class="w-8 h-8 rounded-full bg-orange-100 text-primary-orange flex items-center justify-center font-black text-xs">
                                     ${s.name.charAt(0)}
                                 </div>
                                 ${s.name}
                             </td>
-                            <td class="py-4">R$ ${s.sales.toFixed(2)}</td>
-                            <td class="py-4">${s.tablesServed}</td>
-                            <td class="py-4 text-right text-success-green">R$ ${s.profit.toFixed(2)}</td>
+                            <td class="py-4 px-4 whitespace-nowrap">R$ ${s.sales.toFixed(2)}</td>
+                            <td class="py-4 px-4 whitespace-nowrap text-center">${s.tablesServed}</td>
+                            <td class="py-4 pl-4 text-right text-success-green whitespace-nowrap">R$ ${s.profit.toFixed(2)}</td>
                         </tr>
                         `).join('') : `<tr><td colspan="4" class="py-8 text-center text-gray-400">Nenhum dado de venda por funcionário ainda.</td></tr>`}
                     </tbody>
@@ -461,22 +462,22 @@ function renderDashboard() {
         </div>
 
         ${user.plan === 'UP' || user.plan === 'UE' ? `
-        <div class="mt-8 ex-card p-10 bg-slate-900 text-white shadow-xl relative overflow-hidden">
+        <div class="mt-8 ex-card p-8 bg-slate-900 text-white shadow-xl relative overflow-hidden">
             <div class="relative z-10">
                 <h3 class="text-xl font-black italic uppercase text-primary-orange mb-2">Visão Macro do Negócio (Essencial)</h3>
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Métricas exclusivas para assinantes premium</p>
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
-                        <p class="text-[10px] font-black text-slate-400 uppercase">Custo Estimado (70%)</p>
-                        <p class="text-2xl font-black mt-2 text-white">R$ ${(analytics.totalSales * 0.7).toFixed(2)}</p>
+                <div class="flex flex-wrap gap-6">
+                    <div class="flex-1 min-w-[200px] bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Custo Estimado (70%)</p>
+                        <p class="text-2xl font-black text-white whitespace-nowrap">R$ ${(analytics.totalSales * 0.7).toFixed(2)}</p>
                     </div>
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
-                        <p class="text-[10px] font-black text-slate-400 uppercase">Eficiência de Mesas</p>
-                        <p class="text-2xl font-black mt-2 text-white">${analytics.activeTables > 0 ? ((analytics.orderCount / analytics.activeTables).toFixed(1)) : 0} ped/mesa</p>
+                    <div class="flex-1 min-w-[200px] bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Eficiência de Mesas</p>
+                        <p class="text-2xl font-black text-white whitespace-nowrap">${analytics.activeTables > 0 ? ((analytics.orderCount / analytics.activeTables).toFixed(1)) : 0} <span class="text-xs text-slate-400">ped/mesa</span></p>
                     </div>
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
-                        <p class="text-[10px] font-black text-slate-400 uppercase">Taxa de Conversão</p>
-                        <p class="text-2xl font-black mt-2 text-white">${(Math.random() * (15 - 5) + 5).toFixed(1)}%</p>
+                    <div class="flex-1 min-w-[200px] bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Taxa de Conversão</p>
+                        <p class="text-2xl font-black text-white whitespace-nowrap">${(Math.random() * (15 - 5) + 5).toFixed(1)}%</p>
                     </div>
                 </div>
             </div>
@@ -489,12 +490,136 @@ function renderDashboard() {
             <div class="relative z-10">
                 <h3 class="text-xl font-black italic uppercase mb-2">Relatórios Consolidados - Multi-loja</h3>
                 <p class="text-xs font-bold text-purple-300 uppercase tracking-widest mb-6">Métricas de toda a sua rede (Empresarial)</p>
-                <p class="text-sm font-bold opacity-80">Acesso via painel de Cadastrar Restaurantes ou navegue entre as filiais no topo.</p>
-                <button onclick="renderCadastrarRestaurantes()" class="mt-6 bg-white text-enterprise-purple px-6 py-3 rounded-2xl font-black text-xs uppercase hover:bg-gray-100 transition-all shadow-lg">Ver Todas as Filiais</button>
+                <p class="text-sm font-bold opacity-80">Acesse o super ranking consolidado com a soma de resultados de todas as suas lojas.</p>
+                <div class="flex gap-4 mt-6">
+                    <button onclick="navigateTo('consolidado')" class="bg-white text-enterprise-purple px-6 py-3 rounded-2xl font-black text-xs uppercase hover:bg-gray-100 transition-all shadow-lg">Abrir Relatório Consolidado</button>
+                    <button onclick="renderCadastrarRestaurantes()" class="bg-purple-800 text-white border border-purple-700 px-6 py-3 rounded-2xl font-black text-xs uppercase hover:bg-purple-700 transition-all shadow-lg">Gerenciar Filiais</button>
+                </div>
             </div>
         </div>
         ` : ''}
     </div>`;
+    appContainer.innerHTML = withLayout(content);
+}
+
+// --- TELA: RELATÓRIO CONSOLIDADO (MULTI-LOJA) ---
+function renderConsolidado() {
+    const user = State.getUser();
+    if (user.plan !== 'UE') return navigateTo('dashboard');
+
+    const allRests = State.getRestaurants().filter(r => r.ownerEmail === user.email || r.id === State.getCurrentRest().id);
+    
+    let totalNetworkSales = 0;
+    let totalNetworkOrders = 0;
+    let totalNetworkProfit = 0;
+    let allStaff = [];
+
+    // Consolida dados
+    allRests.forEach(rest => {
+        let restSales = 0;
+        let restProfit = 0;
+        
+        rest.orders.forEach(o => {
+            if (o.status === 'entregue') {
+                restSales += o.total;
+            }
+        });
+        restProfit = restSales * 0.3; // 30% de margem
+
+        totalNetworkSales += restSales;
+        totalNetworkOrders += rest.orders.length;
+        totalNetworkProfit += restProfit;
+
+        rest.staff.forEach(s => {
+            let staffSales = 0;
+            let tablesServed = 0;
+            rest.orders.forEach(o => {
+                if (o.status === 'entregue' && o.waiterId == s.id) {
+                    staffSales += o.total;
+                    tablesServed++;
+                }
+            });
+            allStaff.push({
+                name: s.name,
+                role: s.role,
+                restaurantName: rest.name,
+                sales: staffSales,
+                tablesServed: tablesServed,
+                profit: staffSales * 0.3
+            });
+        });
+    });
+
+    // Filtra apenas quem tem vendas e ordena por lucro decrescente
+    allStaff = allStaff.filter(s => s.sales > 0 || s.tablesServed > 0).sort((a, b) => b.profit - a.profit);
+
+    const content = `
+    <div class="animate-fadeIn max-w-6xl mx-auto">
+        <div class="mb-10 flex justify-between items-end">
+            <div>
+                <h2 class="text-3xl font-black uppercase italic tracking-tighter text-slate-800">Super Ranking Consolidado</h2>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Soma total de desempenho de todas as suas lojas</p>
+            </div>
+            <button onclick="navigateTo('dashboard')" class="text-gray-400 font-bold hover:text-primary-orange transition-colors uppercase text-xs"><i class="fas fa-arrow-left mr-2"></i> Voltar ao Dashboard</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="ex-card p-8 bg-gradient-to-br from-enterprise-purple to-purple-900 text-white shadow-xl">
+                <p class="text-[10px] font-black text-purple-300 uppercase mb-2">Faturamento Bruto (Rede)</p>
+                <p class="text-3xl font-black text-white whitespace-nowrap">R$ ${totalNetworkSales.toFixed(2)}</p>
+            </div>
+            <div class="ex-card p-8 bg-slate-900 text-white shadow-xl">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Pedidos Totais (Rede)</p>
+                <p class="text-3xl font-black text-white whitespace-nowrap">${totalNetworkOrders}</p>
+            </div>
+            <div class="ex-card p-8 bg-green-50 text-success-green border border-green-100 shadow-sm">
+                <p class="text-[10px] font-black uppercase mb-2">Lucro Presumido (Rede - Margem 30%)</p>
+                <p class="text-3xl font-black whitespace-nowrap">R$ ${totalNetworkProfit.toFixed(2)}</p>
+            </div>
+        </div>
+
+        <div class="ex-card p-8 bg-white shadow-sm border border-gray-100">
+            <h3 class="text-xl font-black text-slate-800 italic uppercase mb-8">Ranking de Funcionários (Todas as Lojas)</h3>
+            
+            <div class="overflow-x-auto pb-4">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead>
+                        <tr class="border-b-2 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <th class="pb-4 pr-4 whitespace-nowrap">Posição</th>
+                            <th class="pb-4 pr-4 whitespace-nowrap">Funcionário</th>
+                            <th class="pb-4 px-4 whitespace-nowrap">Restaurante / Filial</th>
+                            <th class="pb-4 px-4 whitespace-nowrap">Vendas Brutas</th>
+                            <th class="pb-4 px-4 whitespace-nowrap text-center">Mesas Atendidas</th>
+                            <th class="pb-4 pl-4 text-right whitespace-nowrap">Lucro Gerado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm font-bold text-slate-700">
+                        ${allStaff.length > 0 ? allStaff.map((s, index) => `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50 transition-all">
+                            <td class="py-4 pr-4 whitespace-nowrap text-gray-400 font-black">
+                                ${index === 0 ? '<i class="fas fa-trophy text-yellow-500 text-lg"></i>' : 
+                                  index === 1 ? '<i class="fas fa-medal text-gray-400 text-lg"></i>' : 
+                                  index === 2 ? '<i class="fas fa-medal text-orange-400 text-lg"></i>' : 
+                                  `#${index + 1}`}
+                            </td>
+                            <td class="py-4 pr-4 flex items-center gap-3 whitespace-nowrap">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-enterprise-purple flex items-center justify-center font-black text-xs">
+                                    ${s.name.charAt(0)}
+                                </div>
+                                ${s.name}
+                            </td>
+                            <td class="py-4 px-4 whitespace-nowrap text-gray-500">${s.restaurantName}</td>
+                            <td class="py-4 px-4 whitespace-nowrap">R$ ${s.sales.toFixed(2)}</td>
+                            <td class="py-4 px-4 whitespace-nowrap text-center">${s.tablesServed}</td>
+                            <td class="py-4 pl-4 text-right text-success-green whitespace-nowrap">R$ ${s.profit.toFixed(2)}</td>
+                        </tr>
+                        `).join('') : `<tr><td colspan="6" class="py-8 text-center text-gray-400">Nenhum dado de venda consolidado ainda.</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>`;
+    
     appContainer.innerHTML = withLayout(content);
 }
 
@@ -1116,6 +1241,7 @@ function handleAddProduct() {
         category
     });
     State.updateCurrentRest(rest);
+    State.apiCreateProduct(rest.id, { name, price, category }); // Chamada à API REST
     tempProductImage = null; // Reseta após salvar
     closeModal('modal-add-product');
     renderProdutos();
@@ -1126,6 +1252,7 @@ function handleRemoveProduct(id) {
     const rest = State.getCurrentRest();
     rest.products = rest.products.filter(p => p.id !== id);
     State.updateCurrentRest(rest);
+    State.apiDeleteProduct(id); // Chamada à API REST
     renderProdutos();
 }
 
@@ -1563,6 +1690,11 @@ function confirmOrder() {
 
     rest.orders.push(newOrder);
     State.updateCurrentRest(rest);
+    
+    // Chamada à API REST para registro financeiro do pedido
+    const orderTotal = tempOrder.reduce((acc, i) => acc + (i.price * i.qnt), 0);
+    State.apiCreateOrder(rest.id, orderTotal);
+
     tempOrder = [];
     closeModal('modal-cart');
     navigateTo('acompanhamento');
@@ -1625,7 +1757,7 @@ function renderAcompanhamento() {
 }
 
 // --- TELA: UA (ADMIN GLOBAL - SUPREMO) ---
-function renderUA() {
+async function renderUA() {
     let rests = State.getRestaurants();
     const accounts = State.getAccounts();
 
@@ -1643,6 +1775,10 @@ function renderUA() {
     if (needsSave) {
         localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
     }
+
+    const adminMetrics = await State.apiLoadAdminMetrics();
+    const totalFaturamento = adminMetrics.reduce((acc, m) => acc + parseFloat(m.faturamento_total_rede || 0), 0);
+    const totalPedidos = adminMetrics.reduce((acc, m) => acc + parseInt(m.pedidos_totais_rede || 0), 0);
 
     const totalMRR = rests.reduce((acc, r) => {
         const owner = accounts.find(a => a.email === r.ownerEmail);
@@ -1665,7 +1801,7 @@ function renderUA() {
 
         <main class="p-12 max-w-7xl mx-auto">
             <!-- Stats Cards -->
-            <div class="grid grid-cols-3 gap-6 mb-12">
+            <div class="grid grid-cols-4 gap-6 mb-12">
                 <div class="bg-[#1e293b] p-8 rounded-2xl border border-slate-700 shadow-xl">
                     <div class="flex items-center gap-3 text-slate-400 mb-4">
                         <i class="fas fa-store"></i> <span class="text-xs font-bold uppercase tracking-wider">Restaurantes</span>
@@ -1674,15 +1810,21 @@ function renderUA() {
                 </div>
                 <div class="bg-[#1e293b] p-8 rounded-2xl border border-slate-700 shadow-xl">
                     <div class="flex items-center gap-3 text-slate-400 mb-4">
-                        <i class="fas fa-check-circle text-green-500"></i> <span class="text-xs font-bold uppercase tracking-wider">Ativos</span>
+                        <i class="fas fa-shopping-basket text-blue-500"></i> <span class="text-xs font-bold uppercase tracking-wider">Total de Pedidos</span>
                     </div>
-                    <p class="text-4xl font-bold">${rests.length}</p>
+                    <p class="text-4xl font-bold">${totalPedidos}</p>
                 </div>
                 <div class="bg-[#1e293b] p-8 rounded-2xl border border-slate-700 shadow-xl">
                     <div class="flex items-center gap-3 text-slate-400 mb-4">
-                        <i class="fas fa-dollar-sign text-green-500"></i> <span class="text-xs font-bold uppercase tracking-wider">MRR</span>
+                        <i class="fas fa-chart-line text-green-500"></i> <span class="text-[10px] font-bold uppercase tracking-wider">Faturamento (Rede)</span>
                     </div>
-                    <p class="text-4xl font-bold">R$ ${totalMRR.toFixed(2)}</p>
+                    <p class="text-3xl font-bold">R$ ${totalFaturamento.toFixed(2)}</p>
+                </div>
+                <div class="bg-[#1e293b] p-8 rounded-2xl border border-slate-700 shadow-xl">
+                    <div class="flex items-center gap-3 text-slate-400 mb-4">
+                        <i class="fas fa-dollar-sign text-green-500"></i> <span class="text-[10px] font-bold uppercase tracking-wider">MRR de Assinaturas</span>
+                    </div>
+                    <p class="text-3xl font-bold">R$ ${totalMRR.toFixed(2)}</p>
                 </div>
             </div>
 

@@ -267,6 +267,48 @@ const State = {
         return (features[plan] || []).includes(feature);
     },
 
+    // --- MÉTODOS DA API REST (CRUDs e DASHBOARD) ---
+    async apiLoadAdminMetrics() {
+        try {
+            const res = await fetch('http://localhost:3000/dashboard/admin/geral');
+            if (res.ok) return await res.json();
+        } catch (e) { console.error('Erro ao buscar métricas do UA', e); }
+        return [];
+    },
+    
+    async apiCreateProduct(restId, prod) {
+        try {
+            await fetch('http://localhost:3000/produtos', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ restaurante_id: restId, nome: prod.name, preco: prod.price, categoria: prod.category })
+            });
+        } catch (e) { console.error('Erro ao criar produto', e); }
+    },
+
+    async apiDeleteProduct(prodId) {
+        try {
+            await fetch('http://localhost:3000/produtos/' + prodId, { method: 'DELETE' });
+        } catch (e) { console.error('Erro ao deletar produto', e); }
+    },
+    
+    async apiCreateOrder(restId, orderTotal) {
+        try {
+            await fetch('http://localhost:3000/pedidos', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ restaurante_id: restId, valor_total: orderTotal })
+            });
+            // Atualiza a métrica de contabilidade do mês
+            const mesAno = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }).replace('/', '-');
+            await fetch('http://localhost:3000/dashboard/atualizar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ restaurante_id: restId, periodo_mes_ano: mesAno, faturamento_adicional: orderTotal, pedidos_adicionais: 1 })
+            });
+        } catch (e) { console.error('Erro ao registrar pedido e contabilidade', e); }
+    },
+
     getAnalytics() {
         const rest = this.getCurrentRest();
         const orders = rest.orders || [];
