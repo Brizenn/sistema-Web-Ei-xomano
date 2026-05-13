@@ -1,18 +1,20 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['info', 'warn', 'error'],
+});
 
 async function main() {
   console.log('🌱 Iniciando o Seed...');
 
   // 1. Opcional: Limpar dados antigos antes de criar novos (Cuidado se rodar em produção!)
   // Descomente as linhas abaixo se quiser que o comando apague tudo antes de criar
-  // await prisma.pedidos.deleteMany();
-  // await prisma.produtos.deleteMany();
-  // await prisma.restaurantes.deleteMany();
-  // await prisma.usuarios.deleteMany();
+  // await prisma.pedido.deleteMany();
+  // await prisma.produto.deleteMany();
+  // await prisma.restaurante.deleteMany();
+  // await prisma.usuario.deleteMany();
 
   // 2. Criar Usuário Admin Global
-  const admin = await prisma.usuarios.upsert({
+  const admin = await prisma.usuario.upsert({
     where: { email: 'admin@eixomano.com' },
     update: {},
     create: {
@@ -25,7 +27,7 @@ async function main() {
   console.log('✅ Usuário Admin criado:', admin.email);
 
   // 3. Criar Dono de Restaurante
-  const dono = await prisma.usuarios.upsert({
+  const dono = await prisma.usuario.upsert({
     where: { email: 'dono@restaurante.com' },
     update: {},
     create: {
@@ -38,10 +40,10 @@ async function main() {
   console.log('✅ Usuário Dono criado:', dono.email);
 
   // 4. Criar Restaurante
-  const rest = await prisma.restaurantes.create({
+  const rest = await prisma.restaurante.create({
     data: {
       nome: 'Restaurante Exemplo',
-      dono_id: dono.id,
+      donoId: dono.id,
       plano: 'UP',
       ativo: true
     }
@@ -49,9 +51,9 @@ async function main() {
   console.log('✅ Restaurante criado:', rest.nome);
 
   // 5. Criar Produto para esse Restaurante
-  const produto = await prisma.produtos.create({
+  const produto = await prisma.produto.create({
     data: {
-      restaurante_id: rest.id,
+      restauranteId: rest.id,
       nome: 'Hambúrguer Clássico',
       preco: 25.90,
       categoria: 'Lanches'
