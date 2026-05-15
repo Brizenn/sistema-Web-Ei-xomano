@@ -2,7 +2,33 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Registro de Usuário e Restaurante
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Registra um novo usuário e seu restaurante
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               pass:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               restName:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Usuário e Restaurante criados com sucesso
+ *       400:
+ *         description: Erro de validação ou E-mail já cadastrado
+ */
 router.post('/register', async (req, res) => {
   const { email, pass, name, restName } = req.body;
   
@@ -55,7 +81,29 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Autentica um usuário existente
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               pass:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login bem-sucedido
+ *       401:
+ *         description: Credenciais inválidas
+ */
 router.post('/login', async (req, res) => {
   const { email, pass } = req.body;
   

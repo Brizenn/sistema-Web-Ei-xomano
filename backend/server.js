@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 const authRoutes = require('./routes/auth');
 
 const app = express();
@@ -7,6 +9,26 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API Ei Xomano',
+      version: '1.0.0',
+      description: 'Documentação oficial dos endpoints do sistema Ei Xomano',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+      },
+    ],
+  },
+  apis: ['./server.js', './routes/*.js'], 
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Rotas
 const restaurantesRoutes = require('./routes/restaurantes');

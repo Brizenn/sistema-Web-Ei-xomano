@@ -75,8 +75,8 @@ function withLayout(content) {
                                 <i class="fas fa-chevron-down text-[10px] text-gray-400"></i>
                             </button>
                             <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border hidden group-hover:block z-50 overflow-hidden">
-                                ${State.getRestaurants().filter(r => r.ownerEmail === user.email || r.id === rest.id).map(r => `
-                                    <button onclick="switchRestaurant(${r.id})" class="w-full text-left px-4 py-3 text-xs font-bold ${r.id === rest.id ? 'bg-orange-50 text-primary-orange' : 'hover:bg-gray-50'} border-b last:border-0 transition-all">
+                                ${State.getRestaurants().filter(r => r.ownerEmail === user.email || r.id == rest.id).map(r => `
+                                    <button onclick="switchRestaurant('${r.id}')" class="w-full text-left px-4 py-3 text-xs font-bold ${r.id == rest.id ? 'bg-orange-50 text-primary-orange' : 'hover:bg-gray-50'} border-b last:border-0 transition-all">
                                         ${r.name}
                                     </button>
                                 `).join('')}
@@ -115,7 +115,7 @@ function toggleShieldMode() {
 }
 
 function switchRestaurant(id) {
-    localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, id);
+    localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, id.toString());
     window.dispatchEvent(new Event('statechange'));
 }
 
@@ -202,7 +202,7 @@ function renderLoginUA() {
     </div>`;
 }
 
-function handleLoginUA() {
+async function handleLoginUA() {
     const user = document.getElementById('ua-user').value;
     const pass = document.getElementById('ua-pass').value;
 
@@ -210,6 +210,17 @@ function handleLoginUA() {
         const adminUser = { email: 'admin', pass: 'admin', role: 'UA', plan: 'UA', name: 'Admin Global' };
         State.setUser(adminUser);
         navigateTo('admin-ua');
+        return;
+    }
+
+    const loginResult = await State.login(user, pass);
+    if (loginResult) {
+        const loggedUser = State.getUser();
+        if (loggedUser.role === 'UA') {
+            navigateTo('admin-ua');
+        } else {
+            alert("Credenciais administrativas inválidas!");
+        }
     } else {
         alert("Credenciais administrativas inválidas!");
     }
@@ -709,7 +720,7 @@ function renderCadastrarRestaurantes() {
                         <p class="text-[10px] font-bold text-gray-400 uppercase mt-1">Criada em: ${new Date(mainRest.createdAt).toLocaleDateString()}</p>
                     </div>
                 </div>
-                <button onclick="switchRestaurant(${mainRest.id})" class="ex-btn-primary px-6 py-3 text-xs">Acessar Painel</button>
+                <button onclick="switchRestaurant('${mainRest.id}')" class="ex-btn-primary px-6 py-3 text-xs">Acessar Painel</button>
             </div>
         </div>
 
@@ -729,7 +740,7 @@ function renderCadastrarRestaurantes() {
                                 <p class="text-[8px] font-bold text-gray-400 uppercase mt-1">ID: ${r.id}</p>
                             </div>
                         </div>
-                        <button onclick="switchRestaurant(${r.id})" class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 hover:text-white transition-all shadow-sm">Acessar</button>
+                        <button onclick="switchRestaurant('${r.id}')" class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 hover:text-white transition-all shadow-sm">Acessar</button>
                     </div>
                 `).join('')}
             </div>
