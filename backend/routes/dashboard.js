@@ -2,7 +2,59 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Obter métricas de um restaurante específico (Para o UR e UA)
+/**
+ * @swagger
+ * /dashboard/admin/geral:
+ *   get:
+ *     summary: Obter métricas gerais de todos os restaurantes (Apenas UA - Admin Global)
+ *     tags: [Dashboard]
+ *     responses:
+ *       200:
+ *         description: Métricas gerais agrupadas por período
+ */
+router.get('/admin/geral', async (req, res) => {
+  try {
+    // Retorna somatório geral agrupado por período
+    const query = `
+      SELECT 
+        periodo_mes_ano, 
+        SUM(faturamento_total) as faturamento_total_rede, 
+        SUM(qtd_pedidos_total) as pedidos_totais_rede
+      FROM dashboard_metricas 
+      GROUP BY periodo_mes_ano 
+      ORDER BY periodo_mes_ano DESC
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao buscar métricas gerais' });
+  }
+});
+
+/**
+ * @swagger
+ * /dashboard/{restaurante_id}:
+ *   get:
+ *     summary: Obter métricas de um restaurante específico
+ *     tags: [Dashboard]
+ *     parameters:
+ *       - in: path
+ *         name: restaurante_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do restaurante
+ *       - in: query
+ *         name: periodo_mes_ano
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filtro opcional de período (ex. 05-2026)
+ *     responses:
+ *       200:
+ *         description: Métricas de faturamento e quantidade de pedidos
+ */
 router.get('/:restaurante_id', async (req, res) => {
   const { restaurante_id } = req.params;
   const { periodo_mes_ano } = req.query; // opcional
@@ -25,28 +77,37 @@ router.get('/:restaurante_id', async (req, res) => {
   }
 });
 
-// Obter métricas gerais de todos os restaurantes (Apenas UA - Admin Global)
-router.get('/admin/geral', async (req, res) => {
-  try {
-    // Retorna somatório geral agrupado por período
-    const query = `
-      SELECT 
-        periodo_mes_ano, 
-        SUM(faturamento_total) as faturamento_total_rede, 
-        SUM(qtd_pedidos_total) as pedidos_totais_rede
-      FROM dashboard_metricas 
-      GROUP BY periodo_mes_ano 
-      ORDER BY periodo_mes_ano DESC
-    `;
-    const result = await pool.query(query);
-    res.json(result.rows);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao buscar métricas gerais' });
-  }
-});
-
-// Atualizar ou inserir métricas do restaurante no mês
+/**
+ * @swagger
+ * /dashboard/atualizar:
+ *   post:
+ *     summary: Atualizar ou inserir métricas do restaurante no mês
+ *     tags: [Dashboard]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - restaurante_id
+ *               - periodo_mes_ano
+ *             properties:
+ *               restaurante_id:
+ *                 type: integer
+ *               periodo_mes_ano:
+ *                 type: string
+ *                 example: 05-2026
+ *               faturamento_adicional:
+ *                 type: number
+ *                 example: 50.00
+ *               pedidos_adicionais:
+ *                 type: integer
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: Métrica atualizada/criada com sucesso
+ */
 router.post('/atualizar', async (req, res) => {
   const { restaurante_id, periodo_mes_ano, faturamento_adicional, pedidos_adicionais } = req.body;
   try {

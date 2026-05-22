@@ -2,7 +2,16 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Listar todos os logs (Para o UA)
+/**
+ * @swagger
+ * /logs:
+ *   get:
+ *     summary: Listar todos os logs de erro (Apenas UA - Admin Global)
+ *     tags: [Logs]
+ *     responses:
+ *       200:
+ *         description: Lista dos últimos 100 logs de erro registrados
+ */
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM logs_erro ORDER BY data_erro DESC LIMIT 100');
@@ -13,7 +22,30 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Registrar um log de erro
+/**
+ * @swagger
+ * /logs:
+ *   post:
+ *     summary: Registrar um novo log de erro
+ *     tags: [Logs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - mensagem
+ *               - origem
+ *             properties:
+ *               mensagem:
+ *                 type: string
+ *               origem:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Log de erro registrado com sucesso
+ */
 router.post('/', async (req, res) => {
   const { mensagem, origem } = req.body;
   try {

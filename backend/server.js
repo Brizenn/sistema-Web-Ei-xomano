@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 
 const app = express();
@@ -24,7 +25,10 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./server.js', './routes/*.js'], 
+  apis: [
+    path.join(__dirname, 'server.js'),
+    path.join(__dirname, 'routes', '*.js')
+  ],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
