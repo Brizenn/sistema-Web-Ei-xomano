@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Usuario {
@@ -29,9 +30,11 @@ model Restaurante {
   ativo      Boolean?           @default(true)
   deletadoEm DateTime?          @map("deletado_em")
   criadoEm   DateTime?          @default(now()) @map("criado_em")
-  produtos   Produto[]
-  pedidos    Pedido[]
-  metricas   DashboardMetrica[]
+  produtos     Produto[]
+  pedidos      Pedido[]
+  metricas     DashboardMetrica[]
+  funcionarios Funcionario[]
+  mesas        Mesa[]
 
   @@map("restaurantes")
 }
@@ -76,4 +79,26 @@ model LogErro {
   dataErro  DateTime? @default(now()) @map("data_erro")
 
   @@map("logs_erro")
+}
+
+model Funcionario {
+  id            Int         @id @default(autoincrement())
+  nome          String      @db.VarChar(100)
+  cargo         String      @db.VarChar(50)
+  restauranteId Int         @map("restaurante_id")
+  restaurante   Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  criadoEm      DateTime?   @default(now()) @map("criado_em")
+
+  @@map("funcionarios")
+}
+
+model Mesa {
+  id            Int         @id @default(autoincrement())
+  numero        Int
+  nome          String?     @db.VarChar(50)
+  restauranteId Int         @map("restaurante_id")
+  restaurante   Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  criadoEm      DateTime?   @default(now()) @map("criado_em")
+
+  @@map("mesas")
 }

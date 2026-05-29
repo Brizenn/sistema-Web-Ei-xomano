@@ -87,6 +87,7 @@ const State = {
             
             if (data.success) {
                 // Sincronizar com localStorage
+                localStorage.setItem('exomano_token', data.token);
                 const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
                 const existingIndex = accounts.findIndex(a => a.email === email);
                 if (existingIndex >= 0) accounts[existingIndex] = data.user;
@@ -94,15 +95,75 @@ const State = {
                 localStorage.setItem(STATE_KEYS.ACCOUNTS, JSON.stringify(accounts));
                 
                 if (data.restaurant) {
+                    // Sincronizar produtos do banco de dados no login
+                    let dbProducts = [];
+                    try {
+                        const prodRes = await fetch('http://localhost:3000/produtos/' + data.restaurant.id);
+                        if (prodRes.ok) {
+                            const apiProds = await prodRes.json();
+                            dbProducts = apiProds.map(p => ({
+                                id: p.id,
+                                name: p.nome,
+                                price: parseFloat(p.preco),
+                                category: p.categoria,
+                                description: 'Item do Cardápio',
+                                image: ''
+                            }));
+                        }
+                    } catch (e) { console.error('Erro ao sincronizar produtos no login', e); }
+
+                    // Sincronizar funcionários do banco de dados no login
+                    let dbStaff = [];
+                    try {
+                        const staffRes = await fetch('http://localhost:3000/funcionarios/' + data.restaurant.id, {
+                            headers: { 'Authorization': 'Bearer ' + data.token }
+                        });
+                        if (staffRes.ok) {
+                            const apiStaff = await staffRes.json();
+                            dbStaff = apiStaff.map(s => ({
+                                id: s.id,
+                                name: s.nome,
+                                role: s.cargo
+                            }));
+                        }
+                    } catch (e) { console.error('Erro ao sincronizar funcionários no login', e); }
+
+                    // Sincronizar mesas do banco de dados no login
+                    let dbTables = [];
+                    try {
+                        const mesasRes = await fetch('http://localhost:3000/mesas/' + data.restaurant.id, {
+                            headers: { 'Authorization': 'Bearer ' + data.token }
+                        });
+                        if (mesasRes.ok) {
+                            const apiMesas = await mesasRes.json();
+                            dbTables = apiMesas.map(m => ({
+                                id: m.id,
+                                number: m.numero,
+                                name: m.nome
+                            }));
+                        }
+                    } catch (e) { console.error('Erro ao sincronizar mesas no login', e); }
+
                     const rests = this.getRestaurants();
                     const restIndex = rests.findIndex(r => r.id == data.restaurant.id);
                     const frontendRest = {
                         ...data.restaurant,
-                        products: [], staff: [], orders: [],
-                        tables: Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
+                        products: dbProducts,
+                        staff: dbStaff,
+                        orders: [],
+                        tables: dbTables.length > 0 ? dbTables : Array.from({ length: 12 }).map((_, i) => ({ id: Date.now() + i, number: i + 1, name: `Mesa ${i + 1}` }))
                     };
-                    if (restIndex >= 0) rests[restIndex] = { ...rests[restIndex], ...data.restaurant };
-                    else rests.push(frontendRest);
+                    if (restIndex >= 0) {
+                        rests[restIndex] = { 
+                            ...rests[restIndex], 
+                            ...data.restaurant,
+                            products: dbProducts,
+                            staff: dbStaff,
+                            tables: dbTables.length > 0 ? dbTables : rests[restIndex].tables
+                        };
+                    } else {
+                        rests.push(frontendRest);
+                    }
                     localStorage.setItem(STATE_KEYS.RESTAURANTS, JSON.stringify(rests));
                     localStorage.setItem(STATE_KEYS.CURRENT_REST_ID, data.restaurant.id);
                 }
@@ -133,6 +194,8 @@ const State = {
             const data = await response.json();
 
             if (!data.success) return { success: false, msg: data.msg };
+
+            localStorage.setItem('exomano_token', data.token);
 
             const accounts = JSON.parse(localStorage.getItem(STATE_KEYS.ACCOUNTS)) || [];
             accounts.push(data.user);
@@ -171,7 +234,12 @@ const State = {
 
     logout() {
         localStorage.removeItem(STATE_KEYS.USER);
+        localStorage.removeItem('exomano_token');
         window.location.reload();
+    },
+
+    getToken() {
+        return localStorage.getItem('exomano_token');
     },
 
     // --- GESTÃO DE USUÁRIO (Sua lógica original preservada) ---
@@ -244,6 +312,7 @@ const State = {
 
         if (type === 'product') return rest.products.length < limits.maxProducts;
         if (type === 'staff') return rest.staff.length < limits.maxStaff;
+        if (type === 'table') return rest.tables.length < limits.tableLimit;
         return true;
     },
 
@@ -270,7 +339,12 @@ const State = {
     // --- MÉTODOS DA API REST (CRUDs e DASHBOARD) ---
     async apiLoadAdminMetrics() {
         try {
-            const res = await fetch('http://localhost:3000/dashboard/admin/geral');
+            const token = this.getToken();
+            const res = await fetch('http://localhost:3000/dashboard/admin/geral', {
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            });
             if (res.ok) return await res.json();
         } catch (e) { console.error('Erro ao buscar métricas do UA', e); }
         return [];
@@ -278,9 +352,13 @@ const State = {
     
     async apiCreateProduct(restId, prod) {
         try {
+            const token = this.getToken();
             await fetch('http://localhost:3000/produtos', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
                 body: JSON.stringify({ restaurante_id: restId, nome: prod.name, preco: prod.price, categoria: prod.category })
             });
         } catch (e) { console.error('Erro ao criar produto', e); }
@@ -288,25 +366,121 @@ const State = {
 
     async apiDeleteProduct(prodId) {
         try {
-            await fetch('http://localhost:3000/produtos/' + prodId, { method: 'DELETE' });
+            const token = this.getToken();
+            await fetch('http://localhost:3000/produtos/' + prodId, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            });
         } catch (e) { console.error('Erro ao deletar produto', e); }
     },
     
     async apiCreateOrder(restId, orderTotal) {
         try {
-            await fetch('http://localhost:3000/pedidos', {
+            const token = this.getToken();
+            const res = await fetch('http://localhost:3000/pedidos', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
                 body: JSON.stringify({ restaurante_id: restId, valor_total: orderTotal })
             });
-            // Atualiza a métrica de contabilidade do mês
-            const mesAno = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }).replace('/', '-');
-            await fetch('http://localhost:3000/dashboard/atualizar', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ restaurante_id: restId, periodo_mes_ano: mesAno, faturamento_adicional: orderTotal, pedidos_adicionais: 1 })
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error('Erro na API ao criar pedido:', errorData.error);
+                alert('Erro ao registrar no financeiro: ' + errorData.error);
+            }
+        } catch (e) { console.error('Erro ao registrar pedido no banco de dados', e); }
+    },
+
+    async apiUpdateRestaurantPlan(restId, plan) {
+        try {
+            const token = this.getToken();
+            await fetch('http://localhost:3000/restaurantes/' + restId, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({ plano: plan })
             });
-        } catch (e) { console.error('Erro ao registrar pedido e contabilidade', e); }
+        } catch (e) { console.error('Erro ao atualizar plano do restaurante no banco', e); }
+    },
+
+    async apiCreateStaff(restId, staff) {
+        try {
+            const token = this.getToken();
+            const res = await fetch('http://localhost:3000/funcionarios', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({ restaurante_id: restId, nome: staff.name, cargo: staff.role })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                return {
+                    id: data.id,
+                    name: data.nome,
+                    role: data.cargo
+                };
+            }
+        } catch (e) { console.error('Erro ao criar funcionário no banco', e); }
+        return null;
+    },
+
+    async apiDeleteStaff(staffId) {
+        try {
+            const token = this.getToken();
+            const res = await fetch('http://localhost:3000/funcionarios/' + staffId, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            });
+            return res.ok;
+        } catch (e) { console.error('Erro ao deletar funcionário no banco', e); }
+        return false;
+    },
+
+    async apiCreateMesa(restId, mesa) {
+        try {
+            const token = this.getToken();
+            const res = await fetch('http://localhost:3000/mesas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({ restaurante_id: restId, numero: mesa.number, nome: mesa.name })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                return {
+                    id: data.id,
+                    number: data.numero,
+                    name: data.nome
+                };
+            }
+        } catch (e) { console.error('Erro ao criar mesa no banco', e); }
+        return null;
+    },
+
+    async apiDeleteMesa(mesaId) {
+        try {
+            const token = this.getToken();
+            const res = await fetch('http://localhost:3000/mesas/' + mesaId, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            });
+            return res.ok;
+        } catch (e) { console.error('Erro ao deletar mesa no banco', e); }
+        return false;
     },
 
     getAnalytics() {
@@ -372,5 +546,18 @@ const State = {
         };
     }
 };
+
+// Auto-correção de IDs antigos do LocalStorage (Timestamps para Inteiros do Postgres)
+try {
+    const currId = localStorage.getItem('exomano_curr_id');
+    if (currId && currId.length > 10) { 
+        console.warn('ID antigo detectado no LocalStorage. Limpando cache para sincronizar com o banco Postgres...');
+        localStorage.removeItem('exomano_user');
+        localStorage.removeItem('exomano_curr_id');
+        localStorage.removeItem('exomano_rests');
+        localStorage.removeItem('exomano_token');
+        window.location.reload();
+    }
+} catch (e) { console.error(e); }
 
 State.init();

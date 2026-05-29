@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -16,7 +17,10 @@ const pool = require('../db');
  *             schema:
  *               type: array
  */
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'UA') {
+    return res.status(403).json({ error: 'Acesso negado. Apenas administradores globais podem listar todos os restaurantes.' });
+  }
   try {
     const result = await pool.query('SELECT * FROM restaurantes WHERE deletado_em IS NULL');
     res.json(result.rows);
@@ -43,8 +47,13 @@ router.get('/', async (req, res) => {
  *       200:
  *         description: Lista de restaurantes do dono
  */
-router.get('/dono/:dono_id', async (req, res) => {
+router.get('/dono/:dono_id', authMiddleware, async (req, res) => {
   const { dono_id } = req.params;
+  
+  if (req.user.role !== 'UA' && Number(req.user.id) !== Number(dono_id)) {
+    return res.status(403).json({ error: 'Acesso negado. Você só pode ver os restaurantes associados ao seu próprio usuário.' });
+  }
+
   try {
     const result = await pool.query('SELECT * FROM restaurantes WHERE dono_id = $1 AND deletado_em IS NULL', [dono_id]);
     res.json(result.rows);
@@ -81,8 +90,13 @@ router.get('/dono/:dono_id', async (req, res) => {
  *       201:
  *         description: Restaurante criado com sucesso
  */
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { nome, dono_id, plano } = req.body;
+
+  if (req.user.role !== 'UA' && Number(req.user.id) !== Number(dono_id)) {
+    return res.status(403).json({ error: 'Acesso negado. Você só pode criar um restaurante para seu próprio usuário.' });
+  }
+
   try {
     const result = await pool.query(
       'INSERT INTO restaurantes (nome, dono_id, plano) VALUES ($1, $2, $3) RETURNING *',
@@ -127,10 +141,21 @@ router.post('/', async (req, res) => {
  *       404:
  *         description: Restaurante não encontrado
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { nome, plano, ativo } = req.body;
   try {
+    // Verificar propriedade se não for Admin UA
+    if (req.user.role !== 'UA') {
+      const check = await pool.query('SELECT dono_id FROM restaurantes WHERE id = $1', [id]);
+      if (check.rows.length === 0) {
+        return res.status(404).json({ error: 'Restaurante não encontrado' });
+      }
+      if (Number(check.rows[0].dono_id) !== Number(req.user.id)) {
+        return res.status(403).json({ error: 'Acesso negado. Você não é o proprietário deste restaurante.' });
+      }
+    }
+
     const result = await pool.query(
       'UPDATE restaurantes SET nome = COALESCE($1, nome), plano = COALESCE($2, plano), ativo = COALESCE($3, ativo) WHERE id = $4 RETURNING *',
       [nome, plano, ativo, id]
@@ -162,9 +187,20 @@ router.put('/:id', async (req, res) => {
  *       404:
  *         description: Restaurante não encontrado
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
+    // Verificar propriedade se não for Admin UA
+    if (req.user.role !== 'UA') {
+      const check = await pool.query('SELECT dono_id FROM restaurantes WHERE id = $1', [id]);
+      if (check.rows.length === 0) {
+        return res.status(404).json({ error: 'Restaurante não encontrado' });
+      }
+      if (Number(check.rows[0].dono_id) !== Number(req.user.id)) {
+        return res.status(403).json({ error: 'Acesso negado. Você não é o proprietário deste restaurante.' });
+      }
+    }
+
     const result = await pool.query(
       'UPDATE restaurantes SET deletado_em = CURRENT_TIMESTAMP, ativo = false WHERE id = $1 RETURNING *',
       [id]

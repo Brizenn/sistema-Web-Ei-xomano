@@ -22,20 +22,38 @@ CREATE TABLE usuarios (
 CREATE TABLE restaurantes (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
+    telefone VARCHAR(20),
     dono_id INTEGER REFERENCES usuarios(id) ON DELETE RESTRICT, -- Bloqueia se tentar apagar o dono
     plano VARCHAR(5), -- UE, UP, UG
     ativo BOOLEAN DEFAULT TRUE,
     deletado_em TIMESTAMP,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- 3. TABELA DE FUNCIONÁRIOS
+CREATE TABLE funcionarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    cargo VARCHAR(50) NOT NULL, -- 'waiter' (garçom) ou 'cook' (cozinheiro)
+    restaurante_id INTEGER NOT NULL REFERENCES restaurantes(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- 3. TABELA DE PRODUTOS
+-- 4. TABELA DE PRODUTOS
 CREATE TABLE produtos (
     id SERIAL PRIMARY KEY,
     restaurante_id INTEGER REFERENCES restaurantes(id) ON DELETE RESTRICT, -- Bloqueia se tentar apagar restaurante com pratos
     nome VARCHAR(100) NOT NULL,
     preco NUMERIC(10,2) NOT NULL,
     categoria VARCHAR(50)
+);
+
+-- 4.5. TABELA DE MESAS
+CREATE TABLE mesas (
+    id SERIAL PRIMARY KEY,
+    numero INTEGER NOT NULL,
+    nome VARCHAR(100),
+    restaurante_id INTEGER NOT NULL REFERENCES restaurantes(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. TABELA DE PEDIDOS (Contabilidade Protegida)

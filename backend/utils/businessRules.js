@@ -70,10 +70,10 @@ function validarDatas(dataInicial, dataFinal) {
 
 // 3. Regras de Perfil e Permissão (Planos e Cargos)
 const PLAN_DETAILS = {
-  'UG': { maxProducts: 15, maxStaff: 6, hasMesaMap: true },
-  'UP': { maxProducts: 999, maxStaff: 10, hasMesaMap: true },
-  'UE': { maxProducts: 999, maxStaff: 999, hasMesaMap: true },
-  'UA': { maxProducts: 9999, maxStaff: 9999, hasMesaMap: true }
+  'UG': { maxProducts: 15, maxStaff: 6, maxTables: 12, hasMesaMap: true },
+  'UP': { maxProducts: 999, maxStaff: 10, maxTables: 12, hasMesaMap: true },
+  'UE': { maxProducts: 999, maxStaff: 999, maxTables: 9999, hasMesaMap: true },
+  'UA': { maxProducts: 9999, maxStaff: 9999, maxTables: 9999, hasMesaMap: true }
 };
 
 function verificarPermissaoPlanos(plano, acao, quantidadeAtual = 0) {
@@ -87,6 +87,9 @@ function verificarPermissaoPlanos(plano, acao, quantidadeAtual = 0) {
   }
   if (acao === 'ADICIONAR_FUNCIONARIO') {
     return quantidadeAtual < limites.maxStaff;
+  }
+  if (acao === 'ADICIONAR_MESA') {
+    return quantidadeAtual < limites.maxTables;
   }
   if (acao === 'ACESSAR_BI_ANALYTICS') {
     return plano === 'UE' || plano === 'UA';

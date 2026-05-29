@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -12,8 +13,12 @@ const pool = require('../db');
  *       200:
  *         description: Métricas gerais agrupadas por período
  */
-router.get('/admin/geral', async (req, res) => {
+router.get('/admin/geral', authMiddleware, async (req, res) => {
   try {
+    if (req.user.role !== 'UA') {
+      return res.status(403).json({ error: 'Acesso negado. Apenas administradores globais podem acessar este recurso.' });
+    }
+
     // Retorna somatório geral agrupado por período
     const query = `
       SELECT 
@@ -55,7 +60,7 @@ router.get('/admin/geral', async (req, res) => {
  *       200:
  *         description: Métricas de faturamento e quantidade de pedidos
  */
-router.get('/:restaurante_id', async (req, res) => {
+router.get('/:restaurante_id', authMiddleware, async (req, res) => {
   const { restaurante_id } = req.params;
   const { periodo_mes_ano } = req.query; // opcional
   try {
@@ -108,9 +113,20 @@ router.get('/:restaurante_id', async (req, res) => {
  *       200:
  *         description: Métrica atualizada/criada com sucesso
  */
-router.post('/atualizar', async (req, res) => {
+router.post('/atualizar', authMiddleware, async (req, res) => {
   const { restaurante_id, periodo_mes_ano, faturamento_adicional, pedidos_adicionais } = req.body;
   try {
+    // Verificar propriedade se não for Admin UA
+    if (req.user.role !== 'UA') {
+      const check = await pool.query('SELECT dono_id FROM restaurantes WHERE id = $1', [restaurante_id]);
+      if (check.rows.length === 0) {
+        return res.status(404).json({ error: 'Restaurante não encontrado' });
+      }
+      if (Number(check.rows[0].dono_id) !== Number(req.user.id)) {
+        return res.status(403).json({ error: 'Acesso negado. Você não é o proprietário deste restaurante.' });
+      }
+    }
+
     // Tenta encontrar a métrica atual
     const check = await pool.query(
       'SELECT id, faturamento_total, qtd_pedidos_total FROM dashboard_metricas WHERE restaurante_id = $1 AND periodo_mes_ano = $2',

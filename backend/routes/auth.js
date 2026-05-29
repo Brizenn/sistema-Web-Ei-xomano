@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middleware/authMiddleware');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'eixomano_secret_key';
 
 /**
  * @swagger
@@ -51,7 +55,7 @@ router.post('/register', async (req, res) => {
     const userResult = await client.query(
       `INSERT INTO usuarios (nome, email, senha, cargo) 
        VALUES ($1, $2, $3, 'UR') RETURNING *`,
-      [name, email, pass] // ATENÇÃO: Senha em texto plano para desenvolvimento. Num app real, use bcrypt.
+      [name, email, pass] // bcrypt.compare(pass, user.senha) ATENÇÃO: Senha em texto plano para desenvolvimento. Num app real, use bcrypt.
     );
     
     const newUser = userResult.rows[0];
@@ -65,10 +69,17 @@ router.post('/register', async (req, res) => {
 
     const newRest = restResult.rows[0];
 
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email, role: newUser.cargo },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     await client.query('COMMIT');
     
     res.status(201).json({
       success: true,
+      token,
       user: newUser,
       restaurant: newRest
     });
@@ -137,8 +148,15 @@ router.post('/login', async (req, res) => {
       plan: restaurant ? restaurant.plano : null
     };
 
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.cargo },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(200).json({
       success: true,
+      token,
       user: mappedUser,
       restaurant: restaurant ? {
         id: restaurant.id,
@@ -150,6 +168,61 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Erro no login:', error);
+    res.status(500).json({ success: false, msg: 'Erro interno no servidor.' });
+  }
+});
+
+/**
+ * @swagger
+ * /auth/update-profile:
+ *   put:
+ *     summary: Atualiza nome e cargo do usuário logado
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *               nome:
+ *                 type: string
+ *               cargo:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Perfil atualizado com sucesso
+ *       404:
+ *         description: Usuário não encontrado
+ */
+router.put('/update-profile', authMiddleware, async (req, res) => {
+  const { userId, nome, cargo } = req.body;
+  
+  // Apenas Administradores Globais (UA) podem editar perfis alheios
+  if (req.user.role !== 'UA' && Number(req.user.id) !== Number(userId)) {
+    return res.status(403).json({ success: false, msg: 'Acesso negado. Você só pode atualizar seu próprio perfil.' });
+  }
+
+  // Apenas UA pode alterar cargo de usuários (ou elevar para UA/UR)
+  if (cargo && req.user.role !== 'UA' && cargo !== req.user.role) {
+    return res.status(403).json({ success: false, msg: 'Você não tem permissão para alterar cargos.' });
+  }
+  
+  try {
+    const result = await pool.query(
+      'UPDATE usuarios SET nome = COALESCE($1, nome), cargo = COALESCE($2, cargo) WHERE id = $3 RETURNING *',
+      [nome, cargo, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, msg: 'Usuário não encontrado.' });
+    }
+    
+    res.status(200).json({ success: true, user: result.rows[0] });
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
     res.status(500).json({ success: false, msg: 'Erro interno no servidor.' });
   }
 });

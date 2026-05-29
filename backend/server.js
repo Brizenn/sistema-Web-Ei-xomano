@@ -40,6 +40,8 @@ const produtosRoutes = require('./routes/produtos');
 const pedidosRoutes = require('./routes/pedidos');
 const dashboardRoutes = require('./routes/dashboard');
 const logsRoutes = require('./routes/logs');
+const funcionariosRoutes = require('./routes/funcionarios');
+const mesasRoutes = require('./routes/mesas');
 
 app.use('/auth', authRoutes);
 app.use('/restaurantes', restaurantesRoutes);
@@ -47,6 +49,8 @@ app.use('/produtos', produtosRoutes);
 app.use('/pedidos', pedidosRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/logs', logsRoutes);
+app.use('/funcionarios', funcionariosRoutes);
+app.use('/mesas', mesasRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });

@@ -934,7 +934,7 @@ function renderKDS() {
 
 function updateOrderStaff(orderId, field, staffId) {
     const rest = State.getCurrentRest();
-    const order = rest.orders.find(o => o.id === orderId);
+    const order = rest.orders.find(o => o.id == orderId);
     if (order) {
         order[field] = staffId;
         State.updateCurrentRest(rest);
@@ -943,7 +943,7 @@ function updateOrderStaff(orderId, field, staffId) {
 
 function changeOrderStatus(orderId, newStatus) {
     const rest = State.getCurrentRest();
-    const order = rest.orders.find(o => o.id === orderId);
+    const order = rest.orders.find(o => o.id == orderId);
     if (order) {
         order.status = newStatus;
         State.updateCurrentRest(rest);
@@ -1088,26 +1088,36 @@ function renderMapaMesas() {
     appContainer.innerHTML = withLayout(content);
 }
 
-function handleAddTable() {
+async function handleAddTable() {
+    if (!State.canAdd('table')) {
+        alert("Limite de mesas atingido para o seu plano. Faça upgrade para expandir seu negócio!");
+        return;
+    }
+
     const rest = State.getCurrentRest();
     const newNumber = rest.tables.length > 0 ? Math.max(...rest.tables.map(t => t.number)) + 1 : 1;
     const name = prompt("Digite o nome ou número da nova mesa:", `Mesa ${newNumber}`);
     if (!name) return;
 
-    rest.tables.push({
-        id: Date.now(),
-        number: newNumber,
-        name: name
-    });
+    // 1. Chamada à API
+    const newTable = await State.apiCreateMesa(rest.id, { number: newNumber, name });
+    
+    // 2. Fallback ou persistência local com retorno do DB
+    const tableToPush = newTable || { id: Date.now(), number: newNumber, name };
+
+    rest.tables.push(tableToPush);
     State.updateCurrentRest(rest);
     renderMapaMesas();
 }
 
-function handleRemoveTable(id) {
+async function handleRemoveTable(id) {
     if (!confirm("Tem certeza que deseja remover esta mesa?")) return;
     const rest = State.getCurrentRest();
     rest.tables = rest.tables.filter(t => t.id !== id);
     State.updateCurrentRest(rest);
+    
+    await State.apiDeleteMesa(id); // Chamada à API REST
+    
     renderMapaMesas();
 }
 
@@ -1320,7 +1330,7 @@ function renderStaff() {
     appContainer.innerHTML = withLayout(content);
 }
 
-function handleAddStaff() {
+async function handleAddStaff() {
     if (!State.canAdd('staff')) {
         alert("Limite de funcionários atingido para o seu plano. Faça upgrade para adicionar mais.");
         return;
@@ -1332,7 +1342,15 @@ function handleAddStaff() {
     if (!name) return alert("Preencha o nome.");
 
     const rest = State.getCurrentRest();
-    rest.staff.push({ id: Date.now(), name, role });
+    
+    // 1. Chamada à API para persistir no Banco de Dados Postgres
+    const newStaff = await State.apiCreateStaff(rest.id, { name, role });
+    
+    // 2. Se a API salvou com sucesso, usamos o registro retornado pela API (que tem o ID real do banco)
+    // Caso contrário (fallback local), geramos um timestamp temporário
+    const staffToPush = newStaff || { id: Date.now(), name, role };
+    
+    rest.staff.push(staffToPush);
     State.updateCurrentRest(rest);
     closeModal('modal-add-staff');
     renderStaff();
@@ -1343,6 +1361,7 @@ function handleRemoveStaff(id) {
     const rest = State.getCurrentRest();
     rest.staff = rest.staff.filter(s => s.id !== id);
     State.updateCurrentRest(rest);
+    State.apiDeleteStaff(id); // Chamada à API REST
     renderStaff();
 }
 
@@ -1548,6 +1567,15 @@ function renderUpgrade() {
 
 function processUpgrade(plan) {
     if (plan === State.getUser().plan) return;
+    const rest = State.getCurrentRest();
+    if (rest && rest.id) {
+        // 1. Atualizar no banco via API REST
+        State.apiUpdateRestaurantPlan(rest.id, plan);
+        // 2. Atualizar no restaurante local
+        rest.plan = plan;
+        State.updateCurrentRest(rest);
+    }
+    // 3. Atualizar no usuário local
     State.updateUser({ plan });
     alert(`Parabéns! Seu plano foi atualizado para ${plan === 'UE' ? 'Empresarial' : plan === 'UP' ? 'Essencial' : 'Gratuito'}.`);
     navigateTo('dashboard');
@@ -1733,10 +1761,10 @@ function renderAcompanhamento() {
                     <div class="flex justify-between items-center mb-8 relative z-10">
                         <div>
                             <p class="text-[10px] font-black text-gray-400 uppercase">Pedido #${order.id.toString().slice(-4)}</p>
-                            <h3 class="text-2xl font-black text-slate-800 uppercase italic">Em Preparo</h3>
+                            <h3 class="text-2xl font-black text-slate-800 uppercase italic">${order.status === 'pronto' ? 'Pronto!' : (order.status === 'entregue' ? 'Entregue' : 'Em Preparo')}</h3>
                         </div>
-                        <div class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center text-primary-orange animate-pulse">
-                            <i class="fas fa-utensils text-2xl"></i>
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center ${order.status === 'pronto' ? 'bg-blue-50 text-blue-500 animate-bounce' : (order.status === 'entregue' ? 'bg-green-50 text-success-green' : 'bg-orange-50 text-primary-orange animate-pulse')}">
+                            ${order.status === 'pronto' ? '<i class="fas fa-bell text-2xl"></i>' : (order.status === 'entregue' ? '<i class="fas fa-check-circle text-2xl"></i>' : '<i class="fas fa-utensils text-2xl"></i>')}
                         </div>
                     </div>
 

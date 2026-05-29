@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware');
+const { verificarPermissaoPlanos } = require('../utils/businessRules');
 
 /**
  * @swagger
@@ -60,9 +62,22 @@ router.get('/:restaurante_id', async (req, res) => {
  *       201:
  *         description: Produto criado com sucesso
  */
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { restaurante_id, nome, preco, categoria } = req.body;
   try {
+    // --- INÍCIO DA VALIDAÇÃO DE NEGÓCIO ---
+    const restData = await pool.query('SELECT plano FROM restaurantes WHERE id = $1', [restaurante_id]);
+    if (restData.rows.length === 0) return res.status(404).json({ error: 'Restaurante não encontrado' });
+    const plano = restData.rows[0].plano;
+    
+    const countData = await pool.query('SELECT COUNT(*) FROM produtos WHERE restaurante_id = $1', [restaurante_id]);
+    const currentCount = parseInt(countData.rows[0].count, 10);
+
+    if (!verificarPermissaoPlanos(plano, 'ADICIONAR_PRODUTO', currentCount)) {
+      return res.status(403).json({ error: `Limite de produtos excedido para o plano ${plano}.` });
+    }
+    // --- FIM DA VALIDAÇÃO DE NEGÓCIO ---
+
     const result = await pool.query(
       'INSERT INTO produtos (restaurante_id, nome, preco, categoria) VALUES ($1, $2, $3, $4) RETURNING *',
       [restaurante_id, nome, preco, categoria]
@@ -106,7 +121,7 @@ router.post('/', async (req, res) => {
  *       404:
  *         description: Produto não encontrado
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { nome, preco, categoria } = req.body;
   try {
@@ -141,7 +156,7 @@ router.put('/:id', async (req, res) => {
  *       404:
  *         description: Produto não encontrado
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM produtos WHERE id = $1 RETURNING *', [id]);

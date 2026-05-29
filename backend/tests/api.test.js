@@ -1,4 +1,8 @@
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'eixomano_secret_key';
+const mockToken = jwt.sign({ id: 1, email: 'nathan@teste.com', role: 'UA' }, JWT_SECRET);
 
 // Mock da conexão com o banco de dados antes de carregar o app para evitar chamadas de rede e travamentos
 const pool = require('../db');
@@ -70,7 +74,9 @@ describe('Testes de Componente - Ei Xomano API', () => {
       ];
       pool.query.mockResolvedValueOnce({ rows: mockRestaurantes });
 
-      const res = await request(app).get('/restaurantes');
+      const res = await request(app)
+        .get('/restaurantes')
+        .set('Authorization', `Bearer ${mockToken}`);
 
       expect(res.statusCode).toEqual(200);
       expect(res.body).toHaveLength(2);
@@ -85,6 +91,7 @@ describe('Testes de Componente - Ei Xomano API', () => {
 
       const res = await request(app)
         .post('/produtos')
+        .set('Authorization', `Bearer ${mockToken}`)
         .send({ restaurante_id: 10, nome: 'X-Salada', preco: 25.00, categoria: 'Hambúrgueres' });
 
       expect(res.statusCode).toEqual(201);
