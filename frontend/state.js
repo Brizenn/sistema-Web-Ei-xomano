@@ -56,7 +56,7 @@ const State = {
         // 2. Inicializa Restaurantes
         if (!localStorage.getItem(STATE_KEYS.RESTAURANTS)) {
             const defaultRest = {
-                id: Date.now(),
+                id: 1,
                 name: 'Meu Restaurante',
                 logo: '',
                 ownerEmail: 'nathan@teste.com',
