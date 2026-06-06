@@ -153,7 +153,9 @@ Todos eles devem, obrigatoriamente, retornar o status **HTTP 401 Unauthorized** 
     `http://localhost:3000/auth/update-profile` (Tente acessar diretamente por requisição)
 7.  **Ver Funcionários de um Restaurante (Acesso UR/Funcionário):**
     `http://localhost:3000/funcionarios/1` (ou qualquer ID cadastrado)
-
+    docker compose up -d
+    *arrumar deploy lançar em alguma plataforma
+    
 ---
 
 Desenvolvido com 🩵 e muita dedicação para simplificar a gestão de bares e restaurantes!
