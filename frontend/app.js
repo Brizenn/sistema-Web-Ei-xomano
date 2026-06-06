@@ -36,9 +36,9 @@ function withLayout(content) {
     const rest = State.getCurrentRest();
     return `
     <div class="flex min-h-screen">
-        <aside class="w-64 bg-white border-r p-6 fixed h-full shadow-sm z-20">
-            <h2 class="text-2xl font-bold text-primary-orange italic mb-10">Ei Xomano</h2>
-            <nav class="space-y-2">
+        <aside class="w-64 bg-white border-r p-6 fixed h-full shadow-sm z-20 flex flex-col overflow-y-auto hidden md:flex">
+            <h2 class="text-2xl font-bold text-primary-orange italic mb-10 shrink-0">Ei Xomano</h2>
+            <nav class="space-y-2 flex-1">
                 <button onclick="navigateTo('dashboard')" class="w-full text-left p-4 hover:bg-orange-50 rounded-2xl font-bold text-gray-500 hover:text-primary-orange transition-all"><i class="fas fa-home mr-3"></i> Início</button>
                 <button onclick="navigateTo('kds')" class="w-full text-left p-4 hover:bg-orange-50 rounded-2xl font-bold text-gray-500 hover:text-primary-orange transition-all"><i class="fas fa-utensils mr-3"></i> Cozinha Digital</button>
                 ${State.hasFeature('mesa_map') ? `
@@ -49,13 +49,21 @@ function withLayout(content) {
                 <button onclick="navigateTo('funcionarios')" class="w-full text-left p-4 hover:bg-orange-50 rounded-2xl font-bold text-gray-500 hover:text-primary-orange transition-all"><i class="fas fa-users mr-3"></i> Equipe</button>
                 <button onclick="navigateTo('planos')" class="w-full text-left p-4 bg-purple-50 text-enterprise-purple rounded-2xl font-black mt-10 hover:shadow-lg transition-all"><i class="fas fa-crown mr-3"></i> Upgrade PRO</button>
             </nav>
-            <div class="absolute bottom-10 left-6 right-6">
+            <div class="mt-8 shrink-0 pb-4">
                 <button onclick="State.logout()" class="w-full p-4 text-gray-400 font-black text-xs uppercase tracking-widest hover:text-danger-red transition-colors"><i class="fas fa-power-off mr-2"></i> Encerrar Sessão</button>
             </div>
         </aside>
 
-        <main class="flex-1 ml-64 p-12 bg-gray-50/50 transition-all" id="main-content-area">
-            <header class="flex justify-between items-center mb-12">
+        <!-- Menu Mobile Simples (Aparece apenas no celular) -->
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50 flex justify-around shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+             <button onclick="navigateTo('dashboard')" class="text-primary-orange flex flex-col items-center"><i class="fas fa-home text-xl"></i></button>
+             <button onclick="navigateTo('kds')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center"><i class="fas fa-utensils text-xl"></i></button>
+             <button onclick="navigateTo('produtos')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center"><i class="fas fa-hamburger text-xl"></i></button>
+             <button onclick="navigateTo('planos')" class="text-enterprise-purple flex flex-col items-center"><i class="fas fa-crown text-xl"></i></button>
+        </div>
+
+        <main class="flex-1 md:ml-64 p-6 md:p-12 pb-24 md:pb-12 bg-gray-50/50 transition-all w-full" id="main-content-area">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                 <div>
                     <span class="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] mb-2 block">Painel Administrativo</span>
                     <h1 class="text-3xl font-black text-slate-800 tracking-tighter">Olá, ${user.name} 👋</h1>
@@ -329,7 +337,7 @@ function renderDashboard() {
 
     const content = `
     <div class="animate-fadeIn">
-        <div class="grid grid-cols-4 gap-6 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <div class="ex-card p-8 bg-gradient-to-br from-primary-orange to-secondary-orange text-white shadow-orange-200">
                 <div class="flex justify-between items-start mb-4">
                     <div class="p-3 bg-white/20 rounded-2xl"><i class="fas fa-dollar-sign"></i></div>
@@ -365,8 +373,8 @@ function renderDashboard() {
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-8">
-            <div class="col-span-2 ex-card p-10 bg-white">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 ex-card p-6 md:p-10 bg-white overflow-hidden">
                 <div class="flex justify-between items-center mb-10">
                     <h3 class="text-xl font-black text-slate-800 italic uppercase">
                         ${hasAdvanced ? 'Analytics Inteligente (BI)' : 'Monitoramento de Vendas'}
@@ -378,10 +386,10 @@ function renderDashboard() {
                 </div>
                 
                 ${hasReports ? `
-                <div class="h-64 flex items-end gap-4">
+                <div class="h-64 flex items-end gap-2 md:gap-4 overflow-hidden pt-10">
                     ${[40, 70, 45, 90, 65, 80, 50, 95, 75, 100].map(h => `
-                        <div class="flex-1 bg-gray-50 rounded-t-xl hover:bg-orange-100 transition-all cursor-pointer group relative" style="height: ${h}%">
-                            <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] p-2 rounded hidden group-hover:block whitespace-nowrap">R$ ${h * 10}</div>
+                        <div class="flex-1 bg-slate-800 rounded-t-xl hover:bg-slate-700 transition-all cursor-pointer group relative shadow-lg" style="height: ${h}%">
+                            <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary-orange text-white font-black text-[10px] p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">R$ ${h * 10}</div>
                         </div>
                     `).join('')}
                 </div>
