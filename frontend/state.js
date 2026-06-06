@@ -78,7 +78,7 @@ const State = {
     // --- NOVA GESTÃO DE AUTENTICAÇÃO (Login e Cadastro com Banco de Dados) ---
     async login(email, pass) {
         try {
-            const response = await fetch('http://localhost:3000/auth/login', {
+            const response = await fetch('https://eixomano-backend.onrender.com/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, pass })
@@ -98,7 +98,7 @@ const State = {
                     // Sincronizar produtos do banco de dados no login
                     let dbProducts = [];
                     try {
-                        const prodRes = await fetch('http://localhost:3000/produtos/' + data.restaurant.id);
+                        const prodRes = await fetch('https://eixomano-backend.onrender.com/produtos/' + data.restaurant.id);
                         if (prodRes.ok) {
                             const apiProds = await prodRes.json();
                             dbProducts = apiProds.map(p => ({
@@ -115,7 +115,7 @@ const State = {
                     // Sincronizar funcionários do banco de dados no login
                     let dbStaff = [];
                     try {
-                        const staffRes = await fetch('http://localhost:3000/funcionarios/' + data.restaurant.id, {
+                        const staffRes = await fetch('https://eixomano-backend.onrender.com/funcionarios/' + data.restaurant.id, {
                             headers: { 'Authorization': 'Bearer ' + data.token }
                         });
                         if (staffRes.ok) {
@@ -131,7 +131,7 @@ const State = {
                     // Sincronizar mesas do banco de dados no login
                     let dbTables = [];
                     try {
-                        const mesasRes = await fetch('http://localhost:3000/mesas/' + data.restaurant.id, {
+                        const mesasRes = await fetch('https://eixomano-backend.onrender.com/mesas/' + data.restaurant.id, {
                             headers: { 'Authorization': 'Bearer ' + data.token }
                         });
                         if (mesasRes.ok) {
@@ -186,7 +186,7 @@ const State = {
 
     async register(email, pass, name, restaurantName) {
         try {
-            const response = await fetch('http://localhost:3000/auth/register', {
+            const response = await fetch('https://eixomano-backend.onrender.com/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, pass, name: name || email.split('@')[0], restName: restaurantName || 'Meu Restaurante' })
@@ -340,7 +340,7 @@ const State = {
     async apiLoadAdminMetrics() {
         try {
             const token = this.getToken();
-            const res = await fetch('http://localhost:3000/dashboard/admin/geral', {
+            const res = await fetch('https://eixomano-backend.onrender.com/dashboard/admin/geral', {
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''
                 }
@@ -353,7 +353,7 @@ const State = {
     async apiCreateProduct(restId, prod) {
         try {
             const token = this.getToken();
-            await fetch('http://localhost:3000/produtos', {
+            await fetch('https://eixomano-backend.onrender.com/produtos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ const State = {
     async apiDeleteProduct(prodId) {
         try {
             const token = this.getToken();
-            await fetch('http://localhost:3000/produtos/' + prodId, {
+            await fetch('https://eixomano-backend.onrender.com/produtos/' + prodId, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''
@@ -379,7 +379,7 @@ const State = {
     async apiCreateOrder(restId, orderTotal) {
         try {
             const token = this.getToken();
-            const res = await fetch('http://localhost:3000/pedidos', {
+            const res = await fetch('https://eixomano-backend.onrender.com/pedidos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -398,7 +398,7 @@ const State = {
     async apiUpdateRestaurantPlan(restId, plan) {
         try {
             const token = this.getToken();
-            await fetch('http://localhost:3000/restaurantes/' + restId, {
+            await fetch('https://eixomano-backend.onrender.com/restaurantes/' + restId, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -412,7 +412,7 @@ const State = {
     async apiCreateStaff(restId, staff) {
         try {
             const token = this.getToken();
-            const res = await fetch('http://localhost:3000/funcionarios', {
+            const res = await fetch('https://eixomano-backend.onrender.com/funcionarios', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -435,7 +435,7 @@ const State = {
     async apiDeleteStaff(staffId) {
         try {
             const token = this.getToken();
-            const res = await fetch('http://localhost:3000/funcionarios/' + staffId, {
+            const res = await fetch('https://eixomano-backend.onrender.com/funcionarios/' + staffId, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''
@@ -449,7 +449,7 @@ const State = {
     async apiCreateMesa(restId, mesa) {
         try {
             const token = this.getToken();
-            const res = await fetch('http://localhost:3000/mesas', {
+            const res = await fetch('https://eixomano-backend.onrender.com/mesas', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -472,7 +472,7 @@ const State = {
     async apiDeleteMesa(mesaId) {
         try {
             const token = this.getToken();
-            const res = await fetch('http://localhost:3000/mesas/' + mesaId, {
+            const res = await fetch('https://eixomano-backend.onrender.com/mesas/' + mesaId, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''
