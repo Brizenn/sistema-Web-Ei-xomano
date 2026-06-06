@@ -60,6 +60,7 @@ function withLayout(content) {
              <button onclick="navigateTo('kds')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center"><i class="fas fa-utensils text-xl"></i></button>
              <button onclick="navigateTo('produtos')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center"><i class="fas fa-hamburger text-xl"></i></button>
              <button onclick="navigateTo('planos')" class="text-enterprise-purple flex flex-col items-center"><i class="fas fa-crown text-xl"></i></button>
+             <button onclick="State.logout()" class="text-gray-400 hover:text-red-500 flex flex-col items-center"><i class="fas fa-power-off text-xl"></i></button>
         </div>
 
         <main class="flex-1 md:ml-64 p-6 md:p-12 pb-24 md:pb-12 bg-gray-50/50 transition-all w-full" id="main-content-area">
@@ -1497,7 +1498,7 @@ function renderUpgrade() {
         <h2 class="text-4xl font-black text-slate-800 italic uppercase mb-4 tracking-tighter">Eleve o Nível do seu Negócio</h2>
         <p class="text-gray-400 font-bold mb-12">Desbloqueie ferramentas avançadas e cresça sem limites.</p>
         
-        <div class="grid grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Plano Gratuito -->
             <div class="ex-card p-10 bg-white border-4 ${user.plan === 'UG' ? 'border-gray-200' : 'border-white'} transition-all relative overflow-hidden flex flex-col">
                 <div class="relative z-10 flex-1">
