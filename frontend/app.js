@@ -55,12 +55,17 @@ function withLayout(content) {
         </aside>
 
         <!-- Menu Mobile Simples (Aparece apenas no celular) -->
-        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50 flex justify-around shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-             <button onclick="navigateTo('dashboard')" class="text-primary-orange flex flex-col items-center"><i class="fas fa-home text-xl"></i></button>
-             <button onclick="navigateTo('kds')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center"><i class="fas fa-utensils text-xl"></i></button>
-             <button onclick="navigateTo('produtos')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center"><i class="fas fa-hamburger text-xl"></i></button>
-             <button onclick="navigateTo('planos')" class="text-enterprise-purple flex flex-col items-center"><i class="fas fa-crown text-xl"></i></button>
-             <button onclick="State.logout()" class="text-gray-400 hover:text-red-500 flex flex-col items-center"><i class="fas fa-power-off text-xl"></i></button>
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50 flex justify-around shadow-[0_-10px_20px_rgba(0,0,0,0.05)] overflow-x-auto gap-4">
+             <button onclick="navigateTo('dashboard')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-home text-xl"></i><span class="text-[8px] font-bold mt-1">Início</span></button>
+             <button onclick="navigateTo('kds')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-utensils text-xl"></i><span class="text-[8px] font-bold mt-1">Cozinha</span></button>
+             ${State.hasFeature('mesa_map') ? `
+             <button onclick="navigateTo('mesas')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-table text-xl"></i><span class="text-[8px] font-bold mt-1">Mesas</span></button>
+             ` : ''}
+             <button onclick="navigateTo('produtos')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-hamburger text-xl"></i><span class="text-[8px] font-bold mt-1">Cardápio</span></button>
+             <button onclick="navigateTo('perfil')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-store text-xl"></i><span class="text-[8px] font-bold mt-1">Perfil</span></button>
+             <button onclick="navigateTo('funcionarios')" class="text-gray-400 hover:text-primary-orange flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-users text-xl"></i><span class="text-[8px] font-bold mt-1">Equipe</span></button>
+             <button onclick="navigateTo('planos')" class="text-enterprise-purple flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-crown text-xl"></i><span class="text-[8px] font-bold mt-1">PRO</span></button>
+             <button onclick="State.logout()" class="text-gray-400 hover:text-red-500 flex flex-col items-center px-2 min-w-[50px]"><i class="fas fa-power-off text-xl"></i><span class="text-[8px] font-bold mt-1">Sair</span></button>
         </div>
 
         <main class="flex-1 md:ml-64 p-6 md:p-12 pb-24 md:pb-12 bg-gray-50/50 transition-all w-full" id="main-content-area">
@@ -1089,7 +1094,7 @@ function renderMapaMesas() {
         '</div>' +
         addBtnHtml +
         '</div>' +
-        '<div class="grid grid-cols-6 gap-6">' +
+        '<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">' +
         tablesHtml +
         '</div>' +
         '</div>';
