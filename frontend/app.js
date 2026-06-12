@@ -1297,18 +1297,18 @@ function renderStaff() {
     const limits = State.getLimits();
     const content = `
     <div class="animate-fadeIn">
-        <div class="flex justify-between items-center mb-10">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
             <div>
                 <h2 class="text-xl font-black uppercase italic">Equipe e Colaboradores</h2>
                 <p class="text-[10px] font-black text-gray-400 uppercase mt-1">Limite do Plano: ${rest.staff.length} / ${limits.maxStaff === 9999 ? 'Ilimitado' : limits.maxStaff}</p>
             </div>
-            <div class="flex gap-4">
-                <button onclick="generateGeneralReport()" class="bg-slate-800 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg hover:bg-slate-700 transition-all"><i class="fas fa-file-invoice mr-2"></i>Gerar Geral</button>
-                <button onclick="openModal('modal-add-staff')" class="ex-btn-primary px-6 py-3 text-xs">Novo Acesso</button>
+            <div class="flex flex-wrap gap-4 w-full md:w-auto">
+                <button onclick="generateGeneralReport()" class="flex-1 md:flex-none bg-slate-800 text-white px-4 md:px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg hover:bg-slate-700 transition-all text-center"><i class="fas fa-file-invoice mr-2"></i>Relatório</button>
+                <button onclick="openModal('modal-add-staff')" class="flex-1 md:flex-none ex-btn-primary px-4 md:px-6 py-3 text-xs text-center">Novo Acesso</button>
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             ${rest.staff.map(s => `
                 <div class="ex-card p-8 bg-white text-center">
                     <div class="w-20 h-20 bg-orange-50 text-primary-orange rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-black border-4 border-white shadow-lg">
